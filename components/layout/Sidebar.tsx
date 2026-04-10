@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { api } from "@/lib/api";
+import { usePathname } from "next/navigation";
+import { api, BASE_URL } from "@/lib/api";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost/anakbangsa";
 
 interface Submenu {
   name: string;
@@ -31,7 +28,6 @@ interface User {
   access_name?: string;
 }
 
-/* 🔥 FIX MDI LAMA → BARU */
 const iconMap: Record<string, string> = {
   "mdi-action-dashboard": "mdi-view-dashboard",
   "mdi-action-settings": "mdi-cog",
@@ -47,9 +43,7 @@ const getIconClass = (icon?: string) => {
 };
 
 export default function Sidebar() {
-  const router = useRouter();
   const pathname = usePathname();
-
   const [menu, setMenu] = useState<Menu[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,21 +55,16 @@ export default function Sidebar() {
 
   const fetchData = async () => {
     try {
-      const [menuRes, userRes] = await Promise.all([
-        api.get("/api/menu"),
-        api.get("/api/user"),
-      ]);
+      const res = await api.get("/api/init");
+      const data = res.data; 
+      const userData = Array.isArray(data.user)
+        ? data.user[0]
+        : data.user;
 
-      if (menuRes?.status) setMenu(menuRes.data || []);
-
-      if (userRes?.status) {
-        const userData = Array.isArray(userRes.data)
-          ? userRes.data[0]
-          : userRes.data;
-        setUser(userData || null);
-      }
+      setUser(userData || null);
+      setMenu(data.menu || []);
     } catch (err: any) {
-      console.error("Error ambil data:", err.message);
+      console.error("FULL ERROR:", err);
     } finally {
       setLoading(false);
     }
@@ -145,20 +134,18 @@ export default function Sidebar() {
                 {!hasSubmenu ? (
                   <Link
                     href={`/${item.route}`}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                      isActive(item.route)
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive(item.route)
                         ? "bg-blue-50 text-blue-700 font-medium"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                      }`}
                   >
                     <i
                       className={`${getIconClass(
                         item.icon
-                      )} text-[20px] flex-shrink-0 ${
-                        isActive(item.route)
+                      )} text-[20px] flex-shrink-0 ${isActive(item.route)
                           ? "text-blue-600"
                           : "text-gray-400 group-hover:text-gray-500"
-                      }`}
+                        }`}
                     />
 
                     <span className="text-sm">{item.name}</span>
@@ -171,21 +158,19 @@ export default function Sidebar() {
                   <div>
                     <button
                       onClick={() => toggleSubmenu(item.name)}
-                      className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                        isSubmenuOpen
+                      className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isSubmenuOpen
                           ? "bg-gray-50 text-gray-900"
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <i
                           className={`${getIconClass(
                             item.icon
-                          )} text-[20px] flex-shrink-0 ${
-                            isSubmenuOpen
+                          )} text-[20px] flex-shrink-0 ${isSubmenuOpen
                               ? "text-blue-600"
                               : "text-gray-400 group-hover:text-gray-500"
-                          }`}
+                            }`}
                         />
                         <span className="text-sm">{item.name}</span>
                       </div>
@@ -198,26 +183,23 @@ export default function Sidebar() {
                     </button>
 
                     <div
-                      className={`ml-7 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${
-                        isSubmenuOpen ? "max-h-96" : "max-h-0"
-                      }`}
+                      className={`ml-7 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${isSubmenuOpen ? "max-h-96" : "max-h-0"
+                        }`}
                     >
                       {item.submenu?.map((sub, j) => (
                         <Link
                           key={j}
                           href={`/${sub.route}`}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                            isActive(sub.route)
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive(sub.route)
                               ? "text-blue-700 bg-blue-50/50 font-medium"
                               : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           <div
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isActive(sub.route)
+                            className={`w-1.5 h-1.5 rounded-full ${isActive(sub.route)
                                 ? "bg-blue-500"
                                 : "bg-gray-300"
-                            }`}
+                              }`}
                           />
                           <span>{sub.name}</span>
                         </Link>

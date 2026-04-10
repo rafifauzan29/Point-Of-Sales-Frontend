@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Dashboard App",
@@ -21,6 +22,7 @@ export default function RootLayout({
       </head>
       <body className="bg-gray-100 text-gray-900">
         {children}
+        <Toaster position="top-right" />
       </body>
     </html>
   );

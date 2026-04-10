@@ -3,33 +3,47 @@
 import { useState } from "react";
 import { User, Lock, LogIn, Eye, EyeOff, Shield } from "lucide-react";
 import { api } from "@/lib/api";
+import { showSuccess, showError } from "@/lib/toast";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
-    setError("");
 
     const formData = new FormData();
     formData.append("username", username);
     formData.append("password", password);
 
+    const start = Date.now(); 
+
     try {
       const data = await api.post("/api/login", formData);
 
+      const duration = Date.now() - start;
+      const minDuration = 1000; 
+
+      if (duration < minDuration) {
+        await new Promise((res) =>
+          setTimeout(res, minDuration - duration)
+        );
+      }
+
       if (data.status) {
-        window.location.href = "/dashboard";
+        showSuccess("Login berhasil!");
+        router.push("/dashboard");
       } else {
-        setError(data.message || "Username atau password salah");
+        showError(data.message || "Username atau password salah");
       }
     } catch (err: any) {
-      setError("Terjadi kesalahan pada server. Silakan coba lagi.");
+      showError("Terjadi kesalahan pada server. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -39,7 +53,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          
+
           <div className="px-8 pt-8 pb-6 text-center border-b border-gray-100">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl mb-4 shadow-md">
               <Shield className="w-8 h-8 text-white" />
@@ -51,12 +65,6 @@ export default function LoginPage() {
           </div>
 
           <div className="px-8 py-6">
-            
-            {error && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm text-center">{error}</p>
-              </div>
-            )}
 
             <form onSubmit={handleLogin} className="space-y-5">
 
