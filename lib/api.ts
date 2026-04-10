@@ -26,6 +26,7 @@ async function apiFetch<T = any>(
                     ? JSON.stringify(body)
                     : undefined,
             headers: {
+                Accept: "application/json", 
                 ...(isFormData ? {} : { "Content-Type": "application/json" }),
                 ...headers,
             },
@@ -39,17 +40,24 @@ async function apiFetch<T = any>(
             throw new Error("Unauthorized");
         }
 
-        if (!res.ok) {
-            const text = await res.text();
-            throw new Error(text || `HTTP Error ${res.status}`);
+        const text = await res.text();
+
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch {
+            console.error("INVALID JSON:", text);
+            throw new Error("Response bukan JSON valid");
         }
 
-        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data?.message || `HTTP Error ${res.status}`);
+        }
 
         return data;
+
     } catch (error: any) {
         console.error("API ERROR:", error.message);
-
         throw error;
     }
 }

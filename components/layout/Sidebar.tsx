@@ -56,7 +56,7 @@ export default function Sidebar() {
   const fetchData = async () => {
     try {
       const res = await api.get("/api/init");
-      const data = res.data; 
+      const data = res.data;
       const userData = Array.isArray(data.user)
         ? data.user[0]
         : data.user;
@@ -100,27 +100,29 @@ export default function Sidebar() {
   return (
     <aside className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
       <div className="px-4 py-6 border-b border-gray-100">
-        <div className="flex flex-col items-center text-center">
-          <div className="relative mb-3">
-            <img
-              src={
-                user?.avatar
-                  ? `${BASE_URL}/assets/images/user/${user.avatar}`
-                  : `${BASE_URL}/assets/images/user/no-foto.jpg`
-              }
-              className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-100"
-              alt="avatar"
-            />
-            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full ring-2 ring-white"></div>
-          </div>
+        <Link href="/profile">
+          <div className="flex flex-col items-center text-center cursor-pointer hover:opacity-80 transition">
+            <div className="relative mb-3">
+              <img
+                src={
+                  user?.avatar
+                    ? `${BASE_URL}/assets/images/user/${user.avatar}`
+                    : `${BASE_URL}/assets/images/user/no-foto.jpg`
+                }
+                className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-100"
+                alt="avatar"
+              />
+              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full ring-2 ring-white"></div>
+            </div>
 
-          <p className="font-semibold text-gray-800 text-sm">
-            {user?.firstname || "-"} {user?.lastname || ""}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {user?.access_name || "-"}
-          </p>
-        </div>
+            <p className="font-semibold text-gray-800 text-sm">
+              {user?.firstname || "-"} {user?.lastname || ""}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {user?.access_name || "-"}
+            </p>
+          </div>
+        </Link>
       </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
@@ -135,16 +137,16 @@ export default function Sidebar() {
                   <Link
                     href={`/${item.route}`}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive(item.route)
-                        ? "bg-blue-50 text-blue-700 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-blue-50 text-blue-700 font-medium"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                   >
                     <i
                       className={`${getIconClass(
                         item.icon
                       )} text-[20px] flex-shrink-0 ${isActive(item.route)
-                          ? "text-blue-600"
-                          : "text-gray-400 group-hover:text-gray-500"
+                        ? "text-blue-600"
+                        : "text-gray-400 group-hover:text-gray-500"
                         }`}
                     />
 
@@ -159,8 +161,8 @@ export default function Sidebar() {
                     <button
                       onClick={() => toggleSubmenu(item.name)}
                       className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isSubmenuOpen
-                          ? "bg-gray-50 text-gray-900"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-gray-50 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }`}
                     >
                       <div className="flex items-center gap-3">
@@ -168,8 +170,8 @@ export default function Sidebar() {
                           className={`${getIconClass(
                             item.icon
                           )} text-[20px] flex-shrink-0 ${isSubmenuOpen
-                              ? "text-blue-600"
-                              : "text-gray-400 group-hover:text-gray-500"
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-500"
                             }`}
                         />
                         <span className="text-sm">{item.name}</span>
@@ -191,14 +193,14 @@ export default function Sidebar() {
                           key={j}
                           href={`/${sub.route}`}
                           className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive(sub.route)
-                              ? "text-blue-700 bg-blue-50/50 font-medium"
-                              : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                            ? "text-blue-700 bg-blue-50/50 font-medium"
+                            : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                             }`}
                         >
                           <div
                             className={`w-1.5 h-1.5 rounded-full ${isActive(sub.route)
-                                ? "bg-blue-500"
-                                : "bg-gray-300"
+                              ? "bg-blue-500"
+                              : "bg-gray-300"
                               }`}
                           />
                           <span>{sub.name}</span>
