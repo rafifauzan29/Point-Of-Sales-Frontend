@@ -95,11 +95,10 @@ export default function ProfilePage() {
 
             if (res.status) {
                 showSuccess("Profile berhasil diperbarui!");
+                window.dispatchEvent(new Event("userUpdated"));
                 setPassword("");
                 setConfirmPassword("");
                 fetchProfile();
-            } else {
-                showError(res.message || "Gagal memperbarui profile");
             }
         } catch (err: any) {
             if (err.message === "Unauthorized") {
@@ -133,9 +132,8 @@ export default function ProfilePage() {
 
             if (data.status) {
                 showSuccess("Avatar berhasil diperbarui!");
+                window.dispatchEvent(new Event("userUpdated")); 
                 fetchProfile();
-            } else {
-                showError(data.message || "Gagal mengupdate avatar");
             }
 
         } catch (err: any) {
@@ -375,15 +373,6 @@ export default function ProfilePage() {
                                 Simpan Perubahan
                             </>
                         )}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={fetchProfile}
-                        className="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium px-5 py-2 rounded-lg transition"
-                    >
-                        <i className="mdi mdi-refresh text-base mr-1"></i>
-                        Reset
                     </button>
                 </div>
             </form>

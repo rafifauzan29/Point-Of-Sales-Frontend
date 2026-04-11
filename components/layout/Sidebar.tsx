@@ -70,6 +70,20 @@ export default function Sidebar() {
     }
   };
 
+  useEffect(() => {
+    fetchData();
+
+    const handleUserUpdate = () => {
+      fetchData();
+    };
+
+    window.addEventListener("userUpdated", handleUserUpdate);
+
+    return () => {
+      window.removeEventListener("userUpdated", handleUserUpdate);
+    };
+  }, []);
+
   const toggleSubmenu = (menuName: string) => {
     setOpenSubmenus((prev) => ({
       ...prev,
