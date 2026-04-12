@@ -22,13 +22,13 @@ export default function LoginPage() {
     formData.append("username", username);
     formData.append("password", password);
 
-    const start = Date.now(); 
+    const start = Date.now();
 
     try {
       const data = await api.post("/api/login", formData);
 
       const duration = Date.now() - start;
-      const minDuration = 1000; 
+      const minDuration = 1000;
 
       if (duration < minDuration) {
         await new Promise((res) =>
@@ -139,7 +139,8 @@ export default function LoginPage() {
 
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-500">
-              © {new Date().getFullYear()} Anak Bangsa Elektronik
+              © {new Date().getFullYear()}{" "}
+              <span className="font-bold">PT. Vetencode Pradani Abadi</span>
             </p>
           </div>
 
