@@ -1,169 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api, BASE_URL } from "@/lib/api";
-import { showSuccess, showError } from "@/lib/toast";
-
-interface User {
-    id: number;
-    username: string;
-    firstname: string;
-    lastname: string;
-    avatar?: string;
-    access_name?: string;
-    pob?: string;
-    dob?: string;
-    address?: string;
-    phone?: string;
-    gender?: string;
-}
+import ProfileSkeleton from "@/components/style/profile/ProfileSkeleton";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function ProfilePage() {
-    const [user, setUser] = useState<User | null>(null);
-    const [form, setForm] = useState<Partial<User>>({});
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [avatarPreview, setAvatarPreview] = useState<string>("");
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+    const {
+        user,
+        form,
+        loading,
+        saving,
+        avatarPreview,
+        uploadingAvatar,
+        password,
+        confirmPassword,
+        setPassword,
+        setConfirmPassword,
+        handleChange,
+        handleSubmit,
+        handleAvatarChange,
+    } = useProfile();
 
-
-    useEffect(() => {
-        fetchProfile();
-    }, []);
-
-    const fetchProfile = async () => {
-        try {
-            const res = await api.get("/api/init");
-            const data = res.data;
-            const userData = Array.isArray(data.user) ? data.user[0] : data.user;
-            setUser(userData || null);
-            setForm(userData || {});
-
-            if (userData?.avatar) {
-                setAvatarPreview(`${BASE_URL}/assets/images/user/${userData.avatar}`);
-            } else {
-                setAvatarPreview(`${BASE_URL}/assets/images/user/no-foto.jpg`);
-            }
-        } catch (err: any) {
-            if (err.message === "Unauthorized") {
-                window.location.href = "/login";
-            }
-            showError("Gagal memuat data profile");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setForm({
-            ...form,
-            [e.target.name]: e.target.value,
-        });
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const cleanPassword = password.trim();
-        const cleanConfirm = confirmPassword.trim();
-
-        if (cleanPassword) {
-            if (cleanPassword.length < 6) {
-                showError("Password minimal 6 karakter");
-                return;
-            }
-
-            if (cleanPassword !== cleanConfirm) {
-                showError("Password tidak sama");
-                return;
-            }
-        }
-
-        setSaving(true);
-
-        try {
-            const payload: any = { ...form };
-
-            if (cleanPassword) {
-                payload.password = cleanPassword;
-                payload.confirm_password = cleanConfirm;
-            }
-
-            const res = await api.post("/api/user/update", payload);
-
-            if (res.status) {
-                showSuccess("Profile berhasil diperbarui!");
-                window.dispatchEvent(new Event("userUpdated"));
-                setPassword("");
-                setConfirmPassword("");
-                fetchProfile();
-            }
-        } catch (err: any) {
-            if (err.message === "Unauthorized") {
-                window.location.href = "/login";
-            }
-            showError("Terjadi kesalahan saat menyimpan");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleAvatarChange = async (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const file = e.target.files?.[0];
-        if (!file || !user?.id) return;
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setAvatarPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-
-        setUploadingAvatar(true);
-
-        try {
-            const formData = new FormData();
-            formData.append("filefoto", file);
-
-            const data = await api.post(`/api/user/avatar/${user.id}`, formData);
-
-            if (data.status) {
-                showSuccess("Avatar berhasil diperbarui!");
-                window.dispatchEvent(new Event("userUpdated")); 
-                fetchProfile();
-            }
-
-        } catch (err: any) {
-            console.error("UPLOAD ERROR:", err);
-            showError(err.message || "Gagal upload avatar");
-        } finally {
-            setUploadingAvatar(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="p-6">
-                <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-20 h-20 bg-gray-200 rounded-full"></div>
-                        <div className="flex-1">
-                            <div className="h-10 bg-gray-200 rounded w-32"></div>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        {[1, 2, 3, 4, 5, 6, 7].map(i => (
-                            <div key={i} className="h-12 bg-gray-100 rounded"></div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <ProfileSkeleton />;
 
     if (!user) {
         return (

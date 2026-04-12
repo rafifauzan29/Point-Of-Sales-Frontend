@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { api, BASE_URL } from "@/lib/api";
+import { api, APP_URL } from "@/lib/api";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -55,7 +55,7 @@ export default function Sidebar() {
 
   const fetchData = async () => {
     try {
-      const res = await api.get("/api/init");
+      const res = await api.get("/init");
       const data = res.data;
       const userData = Array.isArray(data.user)
         ? data.user[0]
@@ -120,8 +120,8 @@ export default function Sidebar() {
               <img
                 src={
                   user?.avatar
-                    ? `${BASE_URL}/assets/images/user/${user.avatar}`
-                    : `${BASE_URL}/assets/images/user/no-foto.jpg`
+                    ? `${APP_URL}/assets/images/user/${user.avatar}`
+                    : `${APP_URL}/assets/images/user/no-foto.jpg`
                 }
                 className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-100"
                 alt="avatar"

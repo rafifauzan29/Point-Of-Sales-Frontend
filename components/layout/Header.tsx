@@ -20,7 +20,7 @@ export default function Header() {
 
   const fetchNamaToko = async () => {
     try {
-      const res = await api.get("/api/init");
+      const res = await api.get("/init");
 
       if (res?.status) {
         setNamaToko(res.data?.toko?.nama_toko);
@@ -35,7 +35,7 @@ export default function Header() {
     try {
       setLoadingLogout(true);
 
-      const res = await api.get("/api/logout");
+      const res = await api.get("/logout");
 
       if (res?.status) {
         showSuccess("Logout berhasil");

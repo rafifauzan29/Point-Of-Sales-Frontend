@@ -1,68 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import api from "@/lib/api";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { ShoppingBag, Package, Truck, DollarSign, Store, TrendingUp, Award, Wallet, BarChart3, CircleDollarSign } from "lucide-react";
-
 import PageHeader from "@/components/ui/PageHeader";
-
-interface DashboardData {
-  today: {
-    omset: number;
-    transaksi: number;
-  };
-  master: {
-    produk: number;
-    supplier: number;
-  };
-  keuangan: {
-    total_belanja: number;
-    total_modal: number;
-  };
-  summary_toko: {
-    name: string;
-    total: number;
-  }[];
-  top_produk: {
-    name: string;
-    total: number;
-  }[];
-  chart: {
-    bulan: string;
-    total: number;
-  }[];
-}
-
-const formatRupiah = (angka: number) => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(angka);
-};
-
-const formatNumber = (angka: number) => {
-  return new Intl.NumberFormat('id-ID').format(angka);
-};
+import DashboardSkeleton from "@/components/style/dashboard/DashboardSkeleton";
+import { useDashboard } from "@/hooks/useDashboard";
+import { formatRupiah, formatNumber } from "@/utils/format";
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    api
-      .get<{ data: DashboardData }>("/api/dashboard")
-      .then((res) => setData(res.data))
-      .catch((err) => {
-        console.error(err);
-        setError(true);
-      })
-      .finally(() => {
-        window.dispatchEvent(new Event("page-loaded"));
-      });
-  }, []);
+  const { data, error, loading } = useDashboard();
 
   if (error) {
     return (
@@ -75,7 +21,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!data) return null;
+  if (loading || !data) return <DashboardSkeleton />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">

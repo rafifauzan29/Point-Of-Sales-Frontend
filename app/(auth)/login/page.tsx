@@ -25,7 +25,7 @@ export default function LoginPage() {
     const start = Date.now();
 
     try {
-      const data = await api.post("/api/login", formData);
+      const data = await api.post("/login", formData);
 
       const duration = Date.now() - start;
       const minDuration = 1000;
