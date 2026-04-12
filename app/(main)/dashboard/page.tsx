@@ -177,7 +177,7 @@ export default function DashboardPage() {
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-lg p-5 border border-gray-100">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-green-600 rounded-full" />
-              <h2 className="font-semibold text-gray-800">Penjualan per Toko</h2>
+              <h2 className="font-semibold text-gray-800">Penjualan Toko Per Hari</h2>
             </div>
 
             <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
