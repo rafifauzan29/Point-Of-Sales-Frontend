@@ -37,6 +37,7 @@ export default function LoginPage() {
       }
 
       if (data.status) {
+        localStorage.setItem("token", data.token);
         showSuccess("Login berhasil!");
         router.push("/dashboard");
       } else {

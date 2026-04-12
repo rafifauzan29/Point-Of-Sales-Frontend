@@ -17,24 +17,31 @@ async function apiFetch<T = any>(
 
     const isFormData = body instanceof FormData;
 
+    const token =
+        typeof window !== "undefined"
+            ? localStorage.getItem("token")
+            : null;
+
     try {
         const res = await fetch(`${BASE_URL}${endpoint}`, {
             method,
             body: isFormData
                 ? body
                 : body
-                    ? JSON.stringify(body)
-                    : undefined,
+                ? JSON.stringify(body)
+                : undefined,
             headers: {
-                Accept: "application/json", 
+                Accept: "application/json",
                 ...(isFormData ? {} : { "Content-Type": "application/json" }),
+                ...(token ? { Authorization: `Bearer ${token}` } : {}), // 🔥 INI KUNCI
                 ...headers,
             },
-            credentials: "include",
+
         });
 
         if (res.status === 401) {
             if (typeof window !== "undefined") {
+                localStorage.removeItem("token"); 
                 window.location.href = "/login";
             }
             throw new Error("Unauthorized");
@@ -55,7 +62,6 @@ async function apiFetch<T = any>(
         }
 
         return data;
-
     } catch (error: any) {
         console.error("API ERROR:", error.message);
         throw error;
