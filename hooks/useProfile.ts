@@ -49,6 +49,7 @@ export function useProfile() {
       showError("Gagal memuat data profile");
     } finally {
       setLoading(false);
+      window.dispatchEvent(new Event("page-loaded")); 
     }
   };
 

@@ -1,5 +1,3 @@
-// /utils/format.ts
-
 export const formatRupiah = (angka: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",

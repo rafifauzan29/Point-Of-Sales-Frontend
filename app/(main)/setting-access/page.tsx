@@ -4,7 +4,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import { Settings } from "lucide-react";
 import { useEffect } from "react";
 
-export default function SettingMenuPage() {
+export default function Page() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -19,8 +19,8 @@ export default function SettingMenuPage() {
       <div className="px-6 py-8 space-y-6">
 
         <PageHeader
-          title="Setting Menu"
-          subtitle="Pengaturan menu aplikasi"
+          title="Setting Access"
+          subtitle="Pengaturan setting access"
           icon={<Settings size={20} />}
           rightContent={
             <span className="text-sm text-gray-500">
@@ -36,7 +36,7 @@ export default function SettingMenuPage() {
           </h2>
 
           <p className="text-sm text-gray-500">
-            Fitur pengaturan menu sedang dalam proses pengembangan dan akan segera tersedia.
+            Fitur setting access sedang dalam proses pengembangan dan akan segera tersedia.
           </p>
 
         </div>
