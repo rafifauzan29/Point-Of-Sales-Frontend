@@ -44,7 +44,7 @@ export default function DashboardPage() {
             <div>
               <p className="text-emerald-100 font-medium flex items-center gap-2">
                 <CircleDollarSign size={18} />
-                Omset Hari Ini
+                Penjualan Hari Ini
               </p>
               <p className="text-4xl font-bold mt-2">
                 {formatRupiah(data.today.omset)}
@@ -52,7 +52,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3 mt-3">
                 <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-sm">
                   <ShoppingBag size={14} />
-                  {formatNumber(data.today.transaksi)} transaksi
+                  {formatNumber(data.today.transaksi)} Transaksi Hari Ini
                 </span>
               </div>
             </div>
@@ -82,7 +82,7 @@ export default function DashboardPage() {
             iconColor="text-orange-600"
           />
           <StatCard
-            title="Total Belanja"
+            title="Total Belanja Hari Ini"
             value={formatRupiah(data.keuangan.total_belanja)}
             icon={<Wallet size={20} />}
             gradient="from-red-500 to-red-700"
@@ -91,7 +91,7 @@ export default function DashboardPage() {
             iconColor="text-red-600"
           />
           <StatCard
-            title="Total Modal"
+            title="Total Modal Gudang"
             value={formatRupiah(data.keuangan.total_modal)}
             icon={<DollarSign size={20} />}
             gradient="from-blue-500 to-blue-700"
