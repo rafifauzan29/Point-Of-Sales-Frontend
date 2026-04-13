@@ -43,9 +43,7 @@ export default function MainLayout({
       </div>
 
       <div className="flex flex-1">
-        <aside className="w-64 bg-white border-r border-gray-200 h-[calc(100vh-4rem)] fixed top-16 left-0">
           <Sidebar />
-        </aside>
 
         <div className="flex-1 flex flex-col ml-64">
           <main className="flex-1 overflow-auto">

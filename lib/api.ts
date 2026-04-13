@@ -28,12 +28,12 @@ async function apiFetch<T = any>(
             body: isFormData
                 ? body
                 : body
-                ? JSON.stringify(body)
-                : undefined,
+                    ? JSON.stringify(body)
+                    : undefined,
             headers: {
                 Accept: "application/json",
                 ...(isFormData ? {} : { "Content-Type": "application/json" }),
-                ...(token ? { Authorization: `Bearer ${token}` } : {}), 
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 ...headers,
             },
 
@@ -41,7 +41,7 @@ async function apiFetch<T = any>(
 
         if (res.status === 401) {
             if (typeof window !== "undefined") {
-                localStorage.removeItem("token"); 
+                localStorage.removeItem("token");
                 window.location.href = "/login";
             }
             throw new Error("Unauthorized");
@@ -77,8 +77,8 @@ export const api = {
     put: <T = any>(url: string, body?: any) =>
         apiFetch<T>(url, { method: "PUT", body }),
 
-    delete: <T = any>(url: string) =>
-        apiFetch<T>(url, { method: "DELETE" }),
+    delete: <T = any>(url: string, body?: any) =>
+        apiFetch<T>(url, { method: "DELETE", body }),
 };
 
 export default api;

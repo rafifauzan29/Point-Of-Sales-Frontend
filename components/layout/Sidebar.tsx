@@ -47,7 +47,7 @@ export default function Sidebar() {
   const [menu, setMenu] = useState<Menu[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -85,10 +85,7 @@ export default function Sidebar() {
   }, []);
 
   const toggleSubmenu = (menuName: string) => {
-    setOpenSubmenus((prev) => ({
-      ...prev,
-      [menuName]: !prev[menuName],
-    }));
+    setOpenSubmenu((prev) => (prev === menuName ? null : menuName));
   };
 
   const isActive = (route: string) =>
@@ -96,7 +93,7 @@ export default function Sidebar() {
 
   if (loading) {
     return (
-      <aside className="w-64 h-screen bg-white border-r border-gray-200">
+      <aside className="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 z-40">
         <div className="p-4 animate-pulse">
           <div className="h-12 w-12 bg-gray-200 rounded-full mx-auto mb-4"></div>
           <div className="h-4 bg-gray-200 rounded w-32 mx-auto mb-2"></div>
@@ -112,8 +109,8 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
-      <div className="px-4 py-6 border-b border-gray-100">
+    <aside className="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 flex flex-col z-40">
+      <div className="px-4 py-6 border-b border-gray-100 flex-shrink-0">
         <Link href="/profile">
           <div className="flex flex-col items-center text-center cursor-pointer hover:opacity-80 transition">
             <div className="relative mb-3">
@@ -139,95 +136,110 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        <div className="space-y-1">
-          {menu.map((item, i) => {
-            const hasSubmenu = item.submenu && item.submenu.length > 0;
-            const isSubmenuOpen = openSubmenus[item.name] || false;
+      <div className="flex-1 min-h-0">
+        <div className="h-full overflow-y-auto scrollbar-thin">
+          <div className="px-3 py-4">
+            <div className="space-y-1">
+              {menu.map((item, i) => {
+                const hasSubmenu = item.submenu && item.submenu.length > 0;
+                const isSubmenuOpen = openSubmenu === item.name;
 
-            return (
-              <div key={i}>
-                {!hasSubmenu ? (
-                  <Link
-                    href={`/${item.route}`}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive(item.route)
-                      ? "bg-blue-50 text-blue-700 font-medium"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                  >
-                    <i
-                      className={`${getIconClass(
-                        item.icon
-                      )} text-[20px] flex-shrink-0 ${isActive(item.route)
-                        ? "text-blue-600"
-                        : "text-gray-400 group-hover:text-gray-500"
+                return (
+                  <div key={i}>
+                    {!hasSubmenu ? (
+                      <Link
+                        href={`/${item.route}`}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                          isActive(item.route)
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }`}
-                    />
-
-                    <span className="text-sm">{item.name}</span>
-
-                    {isActive(item.route) && (
-                      <div className="ml-auto w-1 h-5 bg-blue-600 rounded-full"></div>
-                    )}
-                  </Link>
-                ) : (
-                  <div>
-                    <button
-                      onClick={() => toggleSubmenu(item.name)}
-                      className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isSubmenuOpen
-                        ? "bg-gray-50 text-gray-900"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`}
-                    >
-                      <div className="flex items-center gap-3">
+                      >
                         <i
                           className={`${getIconClass(
                             item.icon
-                          )} text-[20px] flex-shrink-0 ${isSubmenuOpen
-                            ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-gray-500"
-                            }`}
+                          )} text-[20px] flex-shrink-0 ${
+                            isActive(item.route)
+                              ? "text-blue-600"
+                              : "text-gray-400 group-hover:text-gray-500"
+                          }`}
                         />
+
                         <span className="text-sm">{item.name}</span>
-                      </div>
 
-                      {isSubmenuOpen ? (
-                        <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                      )}
-                    </button>
-
-                    <div
-                      className={`ml-7 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${isSubmenuOpen ? "max-h-96" : "max-h-0"
-                        }`}
-                    >
-                      {item.submenu?.map((sub, j) => (
-                        <Link
-                          key={j}
-                          href={`/${sub.route}`}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive(sub.route)
-                            ? "text-blue-700 bg-blue-50/50 font-medium"
-                            : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                            }`}
+                        {isActive(item.route) && (
+                          <div className="ml-auto w-1 h-5 bg-blue-600 rounded-full"></div>
+                        )}
+                      </Link>
+                    ) : (
+                      <div>
+                        <button
+                          onClick={() => toggleSubmenu(item.name)}
+                          className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                            isSubmenuOpen
+                              ? "bg-gray-50 text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
                         >
-                          <div
-                            className={`w-1.5 h-1.5 rounded-full ${isActive(sub.route)
-                              ? "bg-blue-500"
-                              : "bg-gray-300"
+                          <div className="flex items-center gap-3">
+                            <i
+                              className={`${getIconClass(
+                                item.icon
+                              )} text-[20px] flex-shrink-0 ${
+                                isSubmenuOpen
+                                  ? "text-blue-600"
+                                  : "text-gray-400 group-hover:text-gray-500"
                               }`}
-                          />
-                          <span>{sub.name}</span>
-                        </Link>
-                      ))}
-                    </div>
+                            />
+                            <span className="text-sm">{item.name}</span>
+                          </div>
+
+                          <div className={`transition-transform duration-300 ${
+                            isSubmenuOpen ? "rotate-180" : ""
+                          }`}>
+                            {isSubmenuOpen ? (
+                              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+                            ) : (
+                              <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                            )}
+                          </div>
+                        </button>
+
+                        <div
+                          className={`ml-7 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${
+                            isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          {item.submenu?.map((sub, j) => (
+                            <Link
+                              key={j}
+                              href={`/${sub.route}`}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive(sub.route)
+                                  ? "text-blue-700 bg-blue-50/50 font-medium"
+                                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                              }`}
+                            >
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                                  isActive(sub.route)
+                                    ? "bg-blue-500 scale-125"
+                                    : "bg-gray-300"
+                                }`}
+                              />
+                              <span>{sub.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </nav>
+      </div>
     </aside>
   );
 }

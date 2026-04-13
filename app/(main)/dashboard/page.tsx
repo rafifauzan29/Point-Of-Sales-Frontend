@@ -39,25 +39,41 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-emerald-100 font-medium flex items-center gap-2">
-                <CircleDollarSign size={18} />
-                Penjualan Hari Ini
-              </p>
-              <p className="text-4xl font-bold mt-2">
-                {formatRupiah(data.today.omset)}
-              </p>
-              <div className="flex items-center gap-3 mt-3">
-                <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-sm">
-                  <ShoppingBag size={14} />
-                  {formatNumber(data.today.transaksi)} Transaksi Hari Ini
-                </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-emerald-100 font-medium flex items-center gap-2">
+                  <CircleDollarSign size={18} />
+                  Penjualan Hari Ini
+                </p>
+                <p className="text-4xl font-bold mt-2">
+                  {formatRupiah(data.today.omset)}
+                </p>
+              </div>
+
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <TrendingUp size={28} className="text-white" />
               </div>
             </div>
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <TrendingUp size={28} className="text-white" />
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 font-medium flex items-center gap-2">
+                  <ShoppingBag size={18} />
+                  Transaksi Hari Ini
+                </p>
+                <p className="text-4xl font-bold mt-2">
+                  {formatNumber(data.today.transaksi)}
+                </p>
+              </div>
+
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <ShoppingBag size={28} className="text-white" />
+              </div>
             </div>
           </div>
         </div>
