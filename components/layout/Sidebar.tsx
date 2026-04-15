@@ -90,7 +90,7 @@ export default function Sidebar() {
 
   if (loading) {
     return (
-      <aside className="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 z-40">
+      <aside className="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 z-30">
         <div className="p-4 animate-pulse">
           <div className="h-12 w-12 bg-gray-200 rounded-full mx-auto mb-4"></div>
           <div className="h-4 bg-gray-200 rounded w-32 mx-auto mb-2"></div>
@@ -106,7 +106,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 flex flex-col z-40">
+    <aside className="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 flex flex-col z-30">
       <div className="px-4 py-6 border-b border-gray-100 flex-shrink-0">
         <Link href="/profile">
           <div className="flex flex-col items-center text-center cursor-pointer hover:opacity-80 transition">
