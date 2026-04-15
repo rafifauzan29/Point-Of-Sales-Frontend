@@ -1,8 +1,8 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { Users, Plus, Trash2, Save, X, AlertCircle, Search, UserCircle, Store, Lock, KeyRound } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { Users, Plus, Trash2, Save, X, AlertCircle, Search, UserCircle, Store, Lock, KeyRound, Upload } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -55,6 +55,11 @@ export default function SettingUserPage() {
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -162,6 +167,61 @@ export default function SettingUserPage() {
     }
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format file harus JPG, JPEG, atau PNG');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Ukuran file maksimal 2MB');
+      return;
+    }
+
+    setAvatarFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadAvatar = async (userId: number, file: File): Promise<boolean> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/avatar/${userId}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      return result.status === true;
+    } catch (error) {
+      console.error('Upload avatar failed:', error);
+      return false;
+    }
+  };
+
+  const resetAvatarState = () => {
+    setAvatarFile(null);
+    setAvatarPreview("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const openAddModal = () => {
     setFormData({
       username: "",
@@ -178,6 +238,7 @@ export default function SettingUserPage() {
       phone: "",
       active: 1,
     });
+    resetAvatarState();
     setModalAddOpen(true);
   };
 
@@ -198,6 +259,12 @@ export default function SettingUserPage() {
       phone: user.phone || "",
       active: Number(user.active) || 1,
     });
+    if (user.avatar) {
+      setAvatarPreview(getAvatarUrl(user.avatar));
+    } else {
+      setAvatarPreview("");
+    }
+    setAvatarFile(null);
     setModalEditOpen(true);
   };
 
@@ -276,8 +343,21 @@ export default function SettingUserPage() {
 
       const response = await api.post("/user/add", payload);
       if (response.status) {
-        toast.success("User berhasil ditambahkan");
+        const userId = response.id || response.data?.id;
+
+        if (avatarFile && userId) {
+          const uploadSuccess = await uploadAvatar(userId, avatarFile);
+          if (uploadSuccess) {
+            toast.success("User berhasil ditambahkan dengan foto");
+          } else {
+            toast.success("User berhasil ditambahkan, tapi foto gagal diupload");
+          }
+        } else {
+          toast.success("User berhasil ditambahkan");
+        }
+
         setModalAddOpen(false);
+        resetAvatarState();
         fetchUsers();
         window.dispatchEvent(new Event("menuUpdated"));
       } else {
@@ -348,8 +428,19 @@ export default function SettingUserPage() {
 
       const response = await api.put(`/user/update/${selectedUser.id}`, payload);
       if (response.status) {
-        toast.success("User berhasil diupdate");
+        if (avatarFile && selectedUser.id) {
+          const uploadSuccess = await uploadAvatar(selectedUser.id, avatarFile);
+          if (uploadSuccess) {
+            toast.success("User berhasil diupdate dengan foto baru");
+          } else {
+            toast.success("User berhasil diupdate, tapi foto gagal diupload");
+          }
+        } else {
+          toast.success("User berhasil diupdate");
+        }
+
         setModalEditOpen(false);
+        resetAvatarState();
         fetchUsers();
         window.dispatchEvent(new Event("menuUpdated"));
       } else {
@@ -400,6 +491,52 @@ export default function SettingUserPage() {
 
   const allSelected = currentUsers.length > 0 && selectedUsers.length === currentUsers.length;
   const someSelected = selectedUsers.length > 0 && selectedUsers.length < currentUsers.length;
+
+  const AvatarUploadSection = ({ isEdit = false }: { isEdit?: boolean }) => (
+    <div className="mb-5">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Foto Profile
+      </label>
+      <div className="flex items-center gap-4">
+        <div className="w-20 h-20 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+          {avatarPreview ? (
+            <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+          ) : (
+            <UserCircle size={40} className="text-gray-400" />
+          )}
+        </div>
+        <div className="flex-1">
+          <input
+            type="file"
+            id="avatar"
+            name="avatar"
+            accept="image/jpeg,image/jpg,image/png"
+            onChange={handleAvatarChange}
+            className="hidden"
+            ref={fileInputRef}
+          />
+          <label
+            htmlFor="avatar"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg cursor-pointer transition-all text-sm"
+          >
+            <Upload size={16} />
+            {isEdit ? "Ganti Foto" : "Pilih Foto"}
+          </label>
+          {avatarPreview && (
+            <button
+              type="button"
+              onClick={resetAvatarState}
+              className="inline-flex items-center gap-1 px-3 py-2 ml-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-all"
+            >
+              <X size={14} />
+              Hapus
+            </button>
+          )}
+          <p className="text-xs text-gray-400 mt-1">Format: JPG, JPEG, PNG (Max 2MB)</p>
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -713,6 +850,8 @@ export default function SettingUserPage() {
             </div>
             <form onSubmit={handleAddSubmit} className="p-6">
               <div className="space-y-5">
+                <AvatarUploadSection isEdit={false} />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -956,6 +1095,8 @@ export default function SettingUserPage() {
             </div>
             <form onSubmit={handleEditSubmit} className="p-6">
               <div className="space-y-5">
+                <AvatarUploadSection isEdit={true} />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
