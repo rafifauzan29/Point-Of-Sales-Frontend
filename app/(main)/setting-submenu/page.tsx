@@ -1,7 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { Settings, Plus, Trash2, Save, X, AlertCircle, Menu } from "lucide-react";
+import { Settings, Plus, Trash2, Save, X, AlertCircle, Menu, Search } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -26,6 +26,10 @@ export default function SettingSubmenuPage() {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmenus, setSelectedSubmenus] = useState<number[]>([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [modalAddOpen, setModalAddOpen] = useState(false);
   const [modalEditOpen, setModalEditOpen] = useState(false);
@@ -78,6 +82,30 @@ export default function SettingSubmenuPage() {
     fetchMenus();
   }, [fetchSubmenus, fetchMenus]);
 
+  const filteredSubmenus = submenus.filter((submenu) =>
+    submenu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (submenu.route && submenu.route.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    getMenuName(submenu.menu_id).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentSubmenus = filteredSubmenus.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(filteredSubmenus.length / entriesPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, entriesPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleEntriesPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEntriesPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
   const getSubmenuCountByMenuId = (menuId: number) => {
     return submenus.filter(s => s.menu_id === menuId).length;
   };
@@ -108,7 +136,7 @@ export default function SettingSubmenuPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedSubmenus(submenus.map((s) => s.id));
+      setSelectedSubmenus(currentSubmenus.map((s) => s.id));
     } else {
       setSelectedSubmenus([]);
     }
@@ -208,6 +236,8 @@ export default function SettingSubmenuPage() {
         toast.success("Sub menu berhasil ditambahkan");
         setModalAddOpen(false);
         fetchSubmenus();
+
+        window.dispatchEvent(new Event("menuUpdated"));
       }
     } catch (error: any) {
       toast.error(error.message || "Gagal menambahkan sub menu");
@@ -247,6 +277,8 @@ export default function SettingSubmenuPage() {
         toast.success("Sub menu berhasil diupdate");
         setModalEditOpen(false);
         fetchSubmenus();
+
+        window.dispatchEvent(new Event("menuUpdated"));
       }
     } catch (error: any) {
       toast.error(error.message || "Gagal mengupdate sub menu");
@@ -266,6 +298,8 @@ export default function SettingSubmenuPage() {
         setSelectedSubmenus([]);
         setModalDeleteOpen(false);
         fetchSubmenus();
+
+        window.dispatchEvent(new Event("menuUpdated"));
       }
     } catch (error: any) {
       toast.error(error.message || "Gagal menghapus sub menu");
@@ -279,8 +313,8 @@ export default function SettingSubmenuPage() {
     return menu ? menu.name : "-";
   };
 
-  const allSelected = submenus.length > 0 && selectedSubmenus.length === submenus.length;
-  const someSelected = selectedSubmenus.length > 0 && selectedSubmenus.length < submenus.length;
+  const allSelected = currentSubmenus.length > 0 && selectedSubmenus.length === currentSubmenus.length;
+  const someSelected = selectedSubmenus.length > 0 && selectedSubmenus.length < currentSubmenus.length;
 
   if (loading) {
     return (
@@ -366,6 +400,35 @@ export default function SettingSubmenuPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">Show</span>
+                <select
+                  value={entriesPerPage}
+                  onChange={handleEntriesPerPageChange}
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600">entries</span>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search sub menu..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -404,7 +467,7 @@ export default function SettingSubmenuPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {submenus.length === 0 ? (
+                {currentSubmenus.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
@@ -414,7 +477,7 @@ export default function SettingSubmenuPage() {
                     </td>
                   </tr>
                 ) : (
-                  submenus.map((submenu, index) => (
+                  currentSubmenus.map((submenu, index) => (
                     <tr
                       key={submenu.id}
                       className="hover:bg-gray-50 transition-all duration-150 cursor-pointer"
@@ -429,7 +492,7 @@ export default function SettingSubmenuPage() {
                         />
                       </td>
                       <td className="px-4 py-3 text-gray-600 text-sm">
-                        {index + 1}
+                        {indexOfFirstEntry + index + 1}
                       </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
@@ -469,310 +532,361 @@ export default function SettingSubmenuPage() {
               </tbody>
             </table>
           </div>
+
+          {filteredSubmenus.length > 0 && (
+            <div className="p-4 border-t border-gray-100">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-sm text-gray-500">
+                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredSubmenus.length)} dari {filteredSubmenus.length} entry
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Previous
+                  </button>
+                  {[...Array(totalPages)].map((_, index) => {
+                    const pageNumber = index + 1;
+                    if (
+                      pageNumber === 1 ||
+                      pageNumber === totalPages ||
+                      (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => handlePageChange(pageNumber)}
+                          className={`px-3 py-1.5 border rounded-lg text-sm font-medium transition-all ${currentPage === pageNumber
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                            }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    } else if (
+                      (pageNumber === currentPage - 2 && currentPage > 3) ||
+                      (pageNumber === currentPage + 2 && currentPage < totalPages - 2)
+                    ) {
+                      return (
+                        <span key={pageNumber} className="px-2 py-1.5 text-gray-400">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {submenus.length > 0 && (
-          <div className="text-sm text-gray-500">
-            Menampilkan {submenus.length} data sub menu
-          </div>
-        )}
-
-        {modalAddOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setModalAddOpen(false)}
-            />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-800">Tambah Sub Menu Baru</h2>
-                <button
-                  onClick={() => setModalAddOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <form onSubmit={handleAddSubmit} className="p-6">
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Menu Induk <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="menu_id"
-                      value={formData.menu_id}
-                      onChange={handleFormChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
-                      required
-                    >
-                      <option value={0}>Pilih Menu Induk</option>
-                      {menus.map((menu) => (
-                        <option key={menu.id} value={menu.id}>
-                          {menu.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-400 mt-1.5">Menu utama yang menjadi parent</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nama Sub Menu <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleFormChange}
-                      placeholder="Contoh: Daftar Menu, Tambah Menu, dll"
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Route</label>
-                    <input
-                      type="text"
-                      name="route"
-                      value={formData.route}
-                      onChange={handleFormChange}
-                      placeholder="Contoh: setting-menu"
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-400 mt-1.5">Route untuk navigasi sub menu</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Urutan</label>
-                    <select
-                      name="number"
-                      value={formData.number}
-                      onChange={handleFormChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
-                    >
-                      {formData.menu_id > 0 && getNumberOptionsByMenuId(formData.menu_id).map((opt) => {
-                        const isLast = opt.value === getSubmenuCountByMenuId(formData.menu_id) + 1;
-                        return (
-                          <option key={opt.value} value={opt.value}>
-                            {isLast ? `${opt.label} (Terakhir)` : opt.label}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      Urutan sub menu dalam menu induk "{formData.menu_id > 0 ? menus.find(m => m.id === formData.menu_id)?.name : 'Pilih Menu Induk dulu'}"
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-8 pt-5 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => setModalAddOpen(false)}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Menyimpan...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={18} />
-                        Simpan
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {modalEditOpen && selectedSubmenu && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setModalEditOpen(false)}
-            />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-800">Edit Sub Menu</h2>
-                <button
-                  onClick={() => setModalEditOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <form onSubmit={handleEditSubmit} className="p-6">
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Menu Induk <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="menu_id"
-                      value={formData.menu_id}
-                      onChange={handleFormChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
-                      required
-                    >
-                      <option value={0}>Pilih Menu Induk</option>
-                      {menus.map((menu) => (
-                        <option key={menu.id} value={menu.id}>
-                          {menu.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nama Sub Menu <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleFormChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Route</label>
-                    <input
-                      type="text"
-                      name="route"
-                      value={formData.route}
-                      onChange={handleFormChange}
-                      placeholder="Contoh: setting-menu"
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Urutan</label>
-                    <select
-                      name="number"
-                      value={formData.number}
-                      onChange={handleFormChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
-                    >
-                      {selectedSubmenu && getEditNumberOptionsByMenuId(formData.menu_id, selectedSubmenu.id).map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      Urutan sub menu dalam menu induk "{formData.menu_id > 0 ? menus.find(m => m.id === formData.menu_id)?.name : '-'}"
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.active === 1}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            active: e.target.checked ? 1 : 0,
-                          }))
-                        }
-                        className="w-4 h-4 text-blue-600 rounded"
-                      />
-                      <span className="text-sm text-gray-700">Aktif</span>
-                    </label>
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-8 pt-5 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => setModalEditOpen(false)}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Menyimpan...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={18} />
-                        Update
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {modalDeleteOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setModalDeleteOpen(false)}
-            />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
-              <div className="p-6 text-center">
-                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                  <AlertCircle className="text-red-500" size={32} />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                  Konfirmasi Hapus
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  Apakah Anda yakin ingin menghapus <strong>{selectedSubmenus.length}</strong> sub menu yang
-                  dipilih?
-                  <br />
-                  <span className="text-red-500 text-sm">
-                    Tindakan ini tidak dapat dibatalkan!
-                  </span>
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setModalDeleteOpen(false)}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={handleDeleteSubmit}
-                    disabled={submitting}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Menghapus...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 size={18} />
-                        Hapus
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {modalAddOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalAddOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Tambah Sub Menu Baru</h2>
+              <button
+                onClick={() => setModalAddOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleAddSubmit} className="p-6">
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Menu Induk <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="menu_id"
+                    value={formData.menu_id}
+                    onChange={handleFormChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                    required
+                  >
+                    <option value={0}>Pilih Menu Induk</option>
+                    {menus.map((menu) => (
+                      <option key={menu.id} value={menu.id}>
+                        {menu.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1.5">Menu utama yang menjadi parent</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nama Sub Menu <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleFormChange}
+                    placeholder="Contoh: Daftar Menu, Tambah Menu, dll"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Route</label>
+                  <input
+                    type="text"
+                    name="route"
+                    value={formData.route}
+                    onChange={handleFormChange}
+                    placeholder="Contoh: setting-menu"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1.5">Route untuk navigasi sub menu</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Urutan</label>
+                  <select
+                    name="number"
+                    value={formData.number}
+                    onChange={handleFormChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                  >
+                    {formData.menu_id > 0 && getNumberOptionsByMenuId(formData.menu_id).map((opt) => {
+                      const isLast = opt.value === getSubmenuCountByMenuId(formData.menu_id) + 1;
+                      return (
+                        <option key={opt.value} value={opt.value}>
+                          {isLast ? `${opt.label} (Terakhir)` : opt.label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    Urutan sub menu dalam menu induk "{formData.menu_id > 0 ? menus.find(m => m.id === formData.menu_id)?.name : 'Pilih Menu Induk dulu'}"
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-8 pt-5 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setModalAddOpen(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Simpan
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {modalEditOpen && selectedSubmenu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalEditOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Edit Sub Menu</h2>
+              <button
+                onClick={() => setModalEditOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-6">
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Menu Induk <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="menu_id"
+                    value={formData.menu_id}
+                    onChange={handleFormChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                    required
+                  >
+                    <option value={0}>Pilih Menu Induk</option>
+                    {menus.map((menu) => (
+                      <option key={menu.id} value={menu.id}>
+                        {menu.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nama Sub Menu <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleFormChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Route</label>
+                  <input
+                    type="text"
+                    name="route"
+                    value={formData.route}
+                    onChange={handleFormChange}
+                    placeholder="Contoh: setting-menu"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Urutan</label>
+                  <select
+                    name="number"
+                    value={formData.number}
+                    onChange={handleFormChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                  >
+                    {selectedSubmenu && getEditNumberOptionsByMenuId(formData.menu_id, selectedSubmenu.id).map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    Urutan sub menu dalam menu induk "{formData.menu_id > 0 ? menus.find(m => m.id === formData.menu_id)?.name : '-'}"
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.active === 1}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          active: e.target.checked ? 1 : 0,
+                        }))
+                      }
+                      className="w-4 h-4 text-blue-600 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Aktif</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-8 pt-5 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setModalEditOpen(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Update
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {modalDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalDeleteOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="text-red-500" size={32} />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                Konfirmasi Hapus
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Apakah Anda yakin ingin menghapus <strong>{selectedSubmenus.length}</strong> sub menu yang
+                dipilih?
+                <br />
+                <span className="text-red-500 text-sm">
+                  Tindakan ini tidak dapat dibatalkan!
+                </span>
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setModalDeleteOpen(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleDeleteSubmit}
+                  disabled={submitting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Menghapus...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Hapus
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

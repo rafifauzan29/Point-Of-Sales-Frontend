@@ -39,7 +39,8 @@ const iconMap: Record<string, string> = {
 };
 
 const getIconClass = (icon?: string) => {
-  return `mdi ${iconMap[icon || ""] || "mdi-view-dashboard"}`;
+  const mapped = iconMap[icon || ""];
+  return `mdi ${mapped || icon || "mdi-view-dashboard"}`;
 };
 
 export default function Sidebar() {
@@ -48,11 +49,6 @@ export default function Sidebar() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     try {
       const res = await api.get("/init");
@@ -73,14 +69,15 @@ export default function Sidebar() {
   useEffect(() => {
     fetchData();
 
-    const handleUserUpdate = () => {
-      fetchData();
-    };
+    const handleUserUpdate = () => fetchData();
+    const handleMenuUpdate = () => fetchData();
 
     window.addEventListener("userUpdated", handleUserUpdate);
+    window.addEventListener("menuUpdated", handleMenuUpdate);
 
     return () => {
       window.removeEventListener("userUpdated", handleUserUpdate);
+      window.removeEventListener("menuUpdated", handleMenuUpdate);
     };
   }, []);
 
@@ -149,20 +146,18 @@ export default function Sidebar() {
                     {!hasSubmenu ? (
                       <Link
                         href={`/${item.route}`}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                          isActive(item.route)
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive(item.route)
+                          ? "bg-blue-50 text-blue-700 font-medium"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
                       >
                         <i
                           className={`${getIconClass(
                             item.icon
-                          )} text-[20px] flex-shrink-0 ${
-                            isActive(item.route)
-                              ? "text-blue-600"
-                              : "text-gray-400 group-hover:text-gray-500"
-                          }`}
+                          )} text-[20px] flex-shrink-0 ${isActive(item.route)
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-500"
+                            }`}
                         />
 
                         <span className="text-sm">{item.name}</span>
@@ -175,28 +170,25 @@ export default function Sidebar() {
                       <div>
                         <button
                           onClick={() => toggleSubmenu(item.name)}
-                          className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                            isSubmenuOpen
-                              ? "bg-gray-50 text-gray-900"
-                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                          }`}
+                          className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isSubmenuOpen
+                            ? "bg-gray-50 text-gray-900"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                            }`}
                         >
                           <div className="flex items-center gap-3">
                             <i
                               className={`${getIconClass(
                                 item.icon
-                              )} text-[20px] flex-shrink-0 ${
-                                isSubmenuOpen
-                                  ? "text-blue-600"
-                                  : "text-gray-400 group-hover:text-gray-500"
-                              }`}
+                              )} text-[20px] flex-shrink-0 ${isSubmenuOpen
+                                ? "text-blue-600"
+                                : "text-gray-400 group-hover:text-gray-500"
+                                }`}
                             />
                             <span className="text-sm">{item.name}</span>
                           </div>
 
-                          <div className={`transition-transform duration-300 ${
-                            isSubmenuOpen ? "rotate-180" : ""
-                          }`}>
+                          <div className={`transition-transform duration-300 ${isSubmenuOpen ? "rotate-180" : ""
+                            }`}>
                             {isSubmenuOpen ? (
                               <ChevronDownIcon className="w-4 h-4 text-gray-400" />
                             ) : (
@@ -206,26 +198,23 @@ export default function Sidebar() {
                         </button>
 
                         <div
-                          className={`ml-7 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${
-                            isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                          }`}
+                          className={`ml-7 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                            }`}
                         >
                           {item.submenu?.map((sub, j) => (
                             <Link
                               key={j}
                               href={`/${sub.route}`}
-                              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                isActive(sub.route)
-                                  ? "text-blue-700 bg-blue-50/50 font-medium"
-                                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                              }`}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive(sub.route)
+                                ? "text-blue-700 bg-blue-50/50 font-medium"
+                                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                                }`}
                             >
                               <div
-                                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-                                  isActive(sub.route)
-                                    ? "bg-blue-500 scale-125"
-                                    : "bg-gray-300"
-                                }`}
+                                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${isActive(sub.route)
+                                  ? "bg-blue-500 scale-125"
+                                  : "bg-gray-300"
+                                  }`}
                               />
                               <span>{sub.name}</span>
                             </Link>
