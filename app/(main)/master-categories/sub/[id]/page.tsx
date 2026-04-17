@@ -1,24 +1,39 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { Scale, Plus, Trash2, Save, X, AlertCircle, Search, Edit, Eye } from "lucide-react";
+import { FolderTree, Plus, Trash2, Save, X, AlertCircle, Search, Edit, Eye, ArrowLeft } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
+import Link from "next/link";
 
-interface Satuan {
+interface Category {
   id: number;
+  code: string;
   name: string;
-  description: string;
+  parent_id: number;
+  level: number;
   is_active: number;
   created_date: string;
   created_by: string;
 }
 
-export default function MasterSatuanPage() {
-  const [satuans, setSatuans] = useState<Satuan[]>([]);
+interface PageData {
+  parent: Category;
+  subcategories: Category[];
+}
+
+export default function SubCategoryPage() {
+  const params = useParams();
+  const router = useRouter();
+  const parentId = params?.id as string;
+
+  const [data, setData] = useState<PageData | null>(null);
+  const [subcategories, setSubcategories] = useState<Category[]>([]);
+  const [parentCategory, setParentCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedSatuans, setSelectedSatuans] = useState<number[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
@@ -29,11 +44,10 @@ export default function MasterSatuanPage() {
   const [modalDetailOpen, setModalDetailOpen] = useState(false);
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false);
 
-  const [selectedSatuan, setSelectedSatuan] = useState<Satuan | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
     is_active: 1,
   });
 
@@ -44,34 +58,37 @@ export default function MasterSatuanPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const fetchSatuans = useCallback(async () => {
+  const fetchSubCategories = useCallback(async () => {
+    if (!parentId) return;
+    
     try {
       setLoading(true);
-      const response = await api.get("/satuan");
-      if (response.status) {
-        setSatuans(response.data || []);
+      const response = await api.get(`/category/sub/${parentId}`);
+      if (response.status && response.data) {
+        setParentCategory(response.data.parent);
+        setSubcategories(response.data.subcategories || []);
       }
     } catch (error: any) {
-      toast.error(error.message || "Gagal memuat data satuan");
-      setSatuans([]);
+      toast.error(error.message || "Gagal memuat data sub kategori");
+      setSubcategories([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [parentId]);
 
   useEffect(() => {
-    fetchSatuans();
-  }, [fetchSatuans]);
+    fetchSubCategories();
+  }, [fetchSubCategories]);
 
-  const filteredSatuans = satuans.filter((satuan) =>
-    satuan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (satuan.description && satuan.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredSubcategories = subcategories.filter((cat) =>
+    cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cat.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const indexOfLastEntry = currentPage * entriesPerPage;
   const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-  const currentSatuans = filteredSatuans.slice(indexOfFirstEntry, indexOfLastEntry);
-  const totalPages = Math.ceil(filteredSatuans.length / entriesPerPage);
+  const currentSubcategories = filteredSubcategories.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(filteredSubcategories.length / entriesPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -88,54 +105,52 @@ export default function MasterSatuanPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedSatuans(currentSatuans.map((s) => s.id));
+      setSelectedSubcategories(currentSubcategories.map((c) => c.id));
     } else {
-      setSelectedSatuans([]);
+      setSelectedSubcategories([]);
     }
   };
 
-  const handleSelectSatuan = (id: number, checked: boolean) => {
+  const handleSelectSubcategory = (id: number, checked: boolean) => {
     if (checked) {
-      setSelectedSatuans([...selectedSatuans, id]);
+      setSelectedSubcategories([...selectedSubcategories, id]);
     } else {
-      setSelectedSatuans(selectedSatuans.filter((s) => s !== id));
+      setSelectedSubcategories(selectedSubcategories.filter((c) => c !== id));
     }
   };
 
   const openAddModal = () => {
     setFormData({
       name: "",
-      description: "",
       is_active: 1,
     });
     setModalAddOpen(true);
   };
 
-  const openEditModal = (satuan: Satuan) => {
-    setSelectedSatuan(satuan);
+  const openEditModal = (category: Category) => {
+    setSelectedCategory(category);
     setFormData({
-      name: satuan.name,
-      description: satuan.description || "",
-      is_active: satuan.is_active === 1 ? 1 : 0,
+      name: category.name,
+      is_active: category.is_active === 1 ? 1 : 0,
     });
     setModalEditOpen(true);
   };
 
-  const openDetailModal = (satuan: Satuan) => {
-    setSelectedSatuan(satuan);
+  const openDetailModal = (category: Category) => {
+    setSelectedCategory(category);
     setModalDetailOpen(true);
   };
 
   const openDeleteModal = () => {
-    if (selectedSatuans.length === 0) {
-      toast.error("Pilih satuan yang akan dihapus");
+    if (selectedSubcategories.length === 0) {
+      toast.error("Pilih sub kategori yang akan dihapus");
       return;
     }
     setModalDeleteOpen(true);
   };
 
   const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
@@ -148,7 +163,7 @@ export default function MasterSatuanPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error("Nama satuan wajib diisi");
+      toast.error("Nama sub kategori wajib diisi");
       return;
     }
 
@@ -157,17 +172,17 @@ export default function MasterSatuanPage() {
     try {
       const payload = {
         name: formData.name,
-        description: formData.description,
+        parent_id: parseInt(parentId),
       };
 
-      const response = await api.post("/satuan/add", payload);
+      const response = await api.post("/category/add", payload);
       if (response.status) {
-        toast.success("Satuan berhasil ditambahkan");
+        toast.success("Sub kategori berhasil ditambahkan");
         setModalAddOpen(false);
-        fetchSatuans();
+        fetchSubCategories();
       }
     } catch (error: any) {
-      toast.error(error.message || "Gagal menambahkan satuan");
+      toast.error(error.message || "Gagal menambahkan sub kategori");
     } finally {
       setSubmitting(false);
     }
@@ -177,29 +192,28 @@ export default function MasterSatuanPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error("Nama satuan wajib diisi");
+      toast.error("Nama sub kategori wajib diisi");
       return;
     }
 
-    if (!selectedSatuan) return;
+    if (!selectedCategory) return;
 
     setSubmitting(true);
 
     try {
       const payload = {
         name: formData.name,
-        description: formData.description,
         is_active: formData.is_active,
       };
 
-      const response = await api.put(`/satuan/update/${selectedSatuan.id}`, payload);
+      const response = await api.put(`/category/update/${selectedCategory.id}`, payload);
       if (response.status) {
-        toast.success("Satuan berhasil diupdate");
+        toast.success("Sub kategori berhasil diupdate");
         setModalEditOpen(false);
-        fetchSatuans();
+        fetchSubCategories();
       }
     } catch (error: any) {
-      toast.error(error.message || "Gagal mengupdate satuan");
+      toast.error(error.message || "Gagal mengupdate sub kategori");
     } finally {
       setSubmitting(false);
     }
@@ -209,23 +223,23 @@ export default function MasterSatuanPage() {
     setSubmitting(true);
 
     try {
-      const payload = { ids: selectedSatuans };
-      const response = await api.delete("/satuan/delete", payload);
+      const payload = { ids: selectedSubcategories };
+      const response = await api.delete("/category/delete", payload);
       if (response.status) {
-        toast.success(`${selectedSatuans.length} satuan berhasil dihapus`);
-        setSelectedSatuans([]);
+        toast.success(`${selectedSubcategories.length} sub kategori berhasil dihapus`);
+        setSelectedSubcategories([]);
         setModalDeleteOpen(false);
-        fetchSatuans();
+        fetchSubCategories();
       }
     } catch (error: any) {
-      toast.error(error.message || "Gagal menghapus satuan");
+      toast.error(error.message || "Gagal menghapus sub kategori");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const allSelected = currentSatuans.length > 0 && selectedSatuans.length === currentSatuans.length;
-  const someSelected = selectedSatuans.length > 0 && selectedSatuans.length < currentSatuans.length;
+  const allSelected = currentSubcategories.length > 0 && selectedSubcategories.length === currentSubcategories.length;
+  const someSelected = selectedSubcategories.length > 0 && selectedSubcategories.length < currentSubcategories.length;
 
   if (loading) {
     return (
@@ -272,19 +286,44 @@ export default function MasterSatuanPage() {
     );
   }
 
+  if (!parentCategory) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center bg-white rounded-2xl p-8 shadow-lg">
+          <FolderTree size={48} className="text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-700 font-medium">Kategori tidak ditemukan</p>
+          <Link href="/master-categories" className="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700">
+            <ArrowLeft size={16} />
+            Kembali ke Master Kategori
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="px-6 py-8 space-y-6">
         <PageHeader
-          title="Master Satuan"
-          subtitle="Pengelolaan data satuan"
-          icon={<Scale size={20} />}
+          title={`Sub Kategori: ${parentCategory.name}`}
+          subtitle="Pengelolaan sub kategori"
+          icon={<FolderTree size={20} />}
           rightContent={
             <span className="text-sm text-gray-500">
-              Total Satuan: {satuans.length}
+              Total Sub Kategori: {subcategories.length}
             </span>
           }
         />
+
+        <div className="flex justify-between items-center">
+          <Link
+            href="/master-categories"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white rounded-lg px-4 py-2 shadow-sm border border-gray-200 transition-all"
+          >
+            <ArrowLeft size={18} />
+            Kembali ke Master Kategori
+          </Link>
+        </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
           <div className="flex gap-3">
@@ -293,15 +332,15 @@ export default function MasterSatuanPage() {
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
             >
               <Plus size={18} />
-              Tambah Satuan
+              Tambah Sub Kategori
             </button>
             <button
               onClick={openDeleteModal}
-              disabled={selectedSatuans.length === 0}
+              disabled={selectedSubcategories.length === 0}
               className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={18} />
-              Hapus ({selectedSatuans.length})
+              Hapus ({selectedSubcategories.length})
             </button>
           </div>
         </div>
@@ -327,7 +366,7 @@ export default function MasterSatuanPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Cari satuan..."
+                  placeholder="Cari sub kategori..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 text-sm"
@@ -357,10 +396,7 @@ export default function MasterSatuanPage() {
                     Kode
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama Satuan
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deskripsi
+                    Sub Kategori
                   </th>
                   <th className="px-4 py-3 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -371,53 +407,46 @@ export default function MasterSatuanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {currentSatuans.length === 0 ? (
+                {currentSubcategories.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                    <td colSpan={5} className="px-4 py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
-                        <Scale size={48} className="text-gray-300" />
-                        <p className="text-sm">Belum ada data satuan</p>
+                        <FolderTree size={48} className="text-gray-300" />
+                        <p className="text-sm">Belum ada data sub kategori</p>
                         <button
                           onClick={openAddModal}
                           className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
                         >
-                          + Tambah satuan pertama
+                          + Tambah sub kategori pertama
                         </button>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  currentSatuans.map((satuan) => (
+                  currentSubcategories.map((category) => (
                     <tr
-                      key={satuan.id}
+                      key={category.id}
                       className="hover:bg-gray-50 transition-all duration-150 cursor-pointer"
-                      onClick={() => openEditModal(satuan)}
+                      onClick={() => openEditModal(category)}
                     >
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
-                          checked={selectedSatuans.includes(satuan.id)}
-                          onChange={(e) => handleSelectSatuan(satuan.id, e.target.checked)}
+                          checked={selectedSubcategories.includes(category.id)}
+                          onChange={(e) => handleSelectSubcategory(category.id, e.target.checked)}
                           className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                         />
                       </td>
                       <td className="px-4 py-3">
                         <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">
-                          STN-{satuan.id.toString().padStart(3, '0')}
+                          {category.code}
                         </code>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-800">{satuan.name}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {satuan.description ? (
-                          <span className="text-sm text-gray-600">{satuan.description}</span>
-                        ) : (
-                          <span className="text-xs text-gray-400">-</span>
-                        )}
+                        <div className="font-medium text-gray-800">{category.name}</div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {satuan.is_active === 1 ? (
+                        {category.is_active === 1 ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5" />
                             Aktif
@@ -428,13 +457,13 @@ export default function MasterSatuanPage() {
                             Nonaktif
                           </span>
                         )}
-                       </td>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openDetailModal(satuan);
+                              openDetailModal(category);
                             }}
                             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Detail"
@@ -444,7 +473,7 @@ export default function MasterSatuanPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openEditModal(satuan);
+                              openEditModal(category);
                             }}
                             className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
                             title="Edit"
@@ -460,11 +489,11 @@ export default function MasterSatuanPage() {
             </table>
           </div>
 
-          {filteredSatuans.length > 0 && (
+          {filteredSubcategories.length > 0 && (
             <div className="p-4 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-500">
-                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredSatuans.length)} dari {filteredSatuans.length} satuan
+                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredSubcategories.length)} dari {filteredSubcategories.length} sub kategori
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -527,7 +556,7 @@ export default function MasterSatuanPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Tambah Satuan Baru</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Tambah Sub Kategori</h2>
               <button
                 onClick={() => setModalAddOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
@@ -539,30 +568,18 @@ export default function MasterSatuanPage() {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Satuan <span className="text-red-500">*</span>
+                    Nama Sub Kategori <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleFormChange}
-                    placeholder="Contoh: PCS, KG, Meter, Liter"
+                    placeholder="Contoh: Handphone, Laptop, TV"
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
-                  <p className="text-xs text-gray-400 mt-1.5">Nama satuan barang</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleFormChange}
-                    placeholder="Contoh: Pieces, Kilogram, Meter"
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
-                  <p className="text-xs text-gray-400 mt-1.5">Deskripsi satuan (opsional)</p>
+                  <p className="text-xs text-gray-400 mt-1.5">Sub kategori dari {parentCategory.name}</p>
                 </div>
               </div>
               <div className="flex gap-3 mt-8 pt-5 border-t border-gray-200">
@@ -596,7 +613,7 @@ export default function MasterSatuanPage() {
         </div>
       )}
 
-      {modalEditOpen && selectedSatuan && (
+      {modalEditOpen && selectedCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -604,7 +621,7 @@ export default function MasterSatuanPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Edit Satuan</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Edit Sub Kategori</h2>
               <button
                 onClick={() => setModalEditOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
@@ -616,18 +633,18 @@ export default function MasterSatuanPage() {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kode Satuan
+                    Kode Sub Kategori
                   </label>
                   <input
                     type="text"
-                    value={`STN-${selectedSatuan.id.toString().padStart(3, '0')}`}
+                    value={selectedCategory.code}
                     disabled
                     className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-gray-500 cursor-not-allowed"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Satuan <span className="text-red-500">*</span>
+                    Nama Sub Kategori <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -636,16 +653,6 @@ export default function MasterSatuanPage() {
                     onChange={handleFormChange}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleFormChange}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
                 <div className="flex items-center gap-3">
@@ -696,7 +703,7 @@ export default function MasterSatuanPage() {
         </div>
       )}
 
-      {modalDetailOpen && selectedSatuan && (
+      {modalDetailOpen && selectedCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -704,7 +711,7 @@ export default function MasterSatuanPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Detail Satuan</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Detail Sub Kategori</h2>
               <button
                 onClick={() => setModalDetailOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
@@ -714,24 +721,22 @@ export default function MasterSatuanPage() {
             </div>
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Kode Satuan</span>
+                <span className="text-sm text-gray-500">Kode Sub Kategori</span>
                 <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-                  STN-{selectedSatuan.id.toString().padStart(3, '0')}
+                  {selectedCategory.code}
                 </code>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Nama Satuan</span>
-                <span className="text-sm font-medium text-gray-800">{selectedSatuan.name}</span>
+                <span className="text-sm text-gray-500">Nama Sub Kategori</span>
+                <span className="text-sm font-medium text-gray-800">{selectedCategory.name}</span>
               </div>
-              <div className="flex justify-between items-start py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Deskripsi</span>
-                <span className="text-sm text-gray-600 text-right max-w-[60%]">
-                  {selectedSatuan.description || "-"}
-                </span>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Kategori Induk</span>
+                <span className="text-sm text-gray-600">{parentCategory.name}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-500">Status</span>
-                {selectedSatuan.is_active === 1 ? (
+                {selectedCategory.is_active === 1 ? (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                     Aktif
                   </span>
@@ -746,12 +751,12 @@ export default function MasterSatuanPage() {
               <button
                 onClick={() => {
                   setModalDetailOpen(false);
-                  openEditModal(selectedSatuan);
+                  openEditModal(selectedCategory);
                 }}
                 className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
               >
                 <Edit size={18} />
-                Edit Satuan
+                Edit Sub Kategori
               </button>
             </div>
           </div>
@@ -773,7 +778,7 @@ export default function MasterSatuanPage() {
                 Konfirmasi Hapus
               </h2>
               <p className="text-gray-600 mb-6">
-                Apakah Anda yakin ingin menghapus <strong>{selectedSatuans.length}</strong> satuan yang
+                Apakah Anda yakin ingin menghapus <strong>{selectedSubcategories.length}</strong> sub kategori yang
                 dipilih?
                 <br />
                 <span className="text-red-500 text-sm">

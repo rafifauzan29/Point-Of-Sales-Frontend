@@ -295,7 +295,7 @@ export default function DashboardPage() {
                       <td className="px-6 py-3 text-right">
                         <span className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-xs rounded-lg shadow-sm">
                           <Package size={12} />
-                          {formatNumber(product.total)}
+                          {formatNumber(product.total_qty)}
                         </span>
                       </td>
                     </tr>

@@ -22,7 +22,7 @@ export interface DashboardData {
   }[];
   top_produk: {
     name: string;
-    total: number;
+    total_qty: number;
   }[];
   chart: {
     bulan: string;
