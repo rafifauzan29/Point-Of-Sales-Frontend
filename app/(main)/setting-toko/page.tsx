@@ -1,7 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { Store, Plus, Trash2, Save, X, AlertCircle, Search, Building2, Phone, MapPin } from "lucide-react";
+import { Store, Plus, Trash2, Save, X, AlertCircle, Search, Edit, Eye } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -30,6 +30,7 @@ export default function SettingTokoPage() {
 
   const [modalAddOpen, setModalAddOpen] = useState(false);
   const [modalEditOpen, setModalEditOpen] = useState(false);
+  const [modalDetailOpen, setModalDetailOpen] = useState(false);
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false);
 
   const [selectedToko, setSelectedToko] = useState<Toko | null>(null);
@@ -126,6 +127,11 @@ export default function SettingTokoPage() {
       is_active: Number(toko.is_active) || 1,
     });
     setModalEditOpen(true);
+  };
+
+  const openDetailModal = (toko: Toko) => {
+    setSelectedToko(toko);
+    setModalDetailOpen(true);
   };
 
   const openDeleteModal = () => {
@@ -273,6 +279,7 @@ export default function SettingTokoPage() {
                     <th className="px-4 py-3"><div className="h-4 w-40 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-28"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-24"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></th>
+                    <th className="px-4 py-3 w-32"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,6 +291,7 @@ export default function SettingTokoPage() {
                       <td className="px-4 py-3"><div className="h-4 w-48 bg-gray-200 rounded animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-5 w-12 bg-gray-200 rounded-full animate-pulse" /></td>
+                      <td className="px-4 py-3"><div className="flex gap-2"><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -304,7 +312,7 @@ export default function SettingTokoPage() {
           icon={<Store size={20} />}
           rightContent={
             <span className="text-sm text-gray-500">
-              {new Date().toLocaleDateString("id-ID")}
+              Total Toko: {tokos.length}
             </span>
           }
         />
@@ -350,7 +358,7 @@ export default function SettingTokoPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search toko..."
+                  placeholder="Cari toko..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 text-sm"
@@ -391,15 +399,24 @@ export default function SettingTokoPage() {
                   <th className="px-4 py-3 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentTokos.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                    <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
                         <Store size={48} className="text-gray-300" />
                         <p className="text-sm">Belum ada data toko</p>
+                        <button
+                          onClick={openAddModal}
+                          className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          + Tambah toko pertama
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -419,7 +436,7 @@ export default function SettingTokoPage() {
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                        <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">
                           {toko.code}
                         </code>
                       </td>
@@ -449,6 +466,30 @@ export default function SettingTokoPage() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetailModal(toko);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="Detail"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(toko);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            title="Edit"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -460,7 +501,7 @@ export default function SettingTokoPage() {
             <div className="p-4 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-500">
-                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredTokos.length)} dari {filteredTokos.length} entry
+                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredTokos.length)} dari {filteredTokos.length} toko
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -717,6 +758,72 @@ export default function SettingTokoPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalDetailOpen && selectedToko && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalDetailOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Detail Toko</h2>
+              <button
+                onClick={() => setModalDetailOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Kode Toko</span>
+                <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                  {selectedToko.code}
+                </code>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Nama Toko</span>
+                <span className="text-sm font-medium text-gray-800">{selectedToko.name}</span>
+              </div>
+              <div className="flex justify-between items-start py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Alamat</span>
+                <span className="text-sm text-gray-600 text-right max-w-[60%]">
+                  {selectedToko.address || "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">No. HP</span>
+                <span className="text-sm text-gray-600">{selectedToko.phone || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Status</span>
+                {Number(selectedToko.is_active) === 1 ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    Aktif
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Nonaktif
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="p-6 pt-0">
+              <button
+                onClick={() => {
+                  setModalDetailOpen(false);
+                  openEditModal(selectedToko);
+                }}
+                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+              >
+                <Edit size={18} />
+                Edit Toko
+              </button>
+            </div>
           </div>
         </div>
       )}

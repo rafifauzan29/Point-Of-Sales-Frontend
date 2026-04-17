@@ -1,7 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { KeyRound, Plus, Trash2, Save, X, AlertCircle, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { KeyRound, Plus, Trash2, Save, X, AlertCircle, Search, ChevronDown, ChevronRight, Edit, Eye } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -47,6 +47,7 @@ export default function SettingAccessPage() {
 
   const [modalAddOpen, setModalAddOpen] = useState(false);
   const [modalEditOpen, setModalEditOpen] = useState(false);
+  const [modalDetailOpen, setModalDetailOpen] = useState(false);
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false);
 
   const [selectedAccess, setSelectedAccess] = useState<Access | null>(null);
@@ -181,6 +182,12 @@ export default function SettingAccessPage() {
     await fetchAccessDetails(access.id);
     setExpandedMenus([]);
     setModalEditOpen(true);
+  };
+
+  const openDetailModal = async (access: Access) => {
+    setSelectedAccess(access);
+    await fetchAccessDetails(access.id);
+    setModalDetailOpen(true);
   };
 
   const openDeleteModal = () => {
@@ -403,6 +410,7 @@ export default function SettingAccessPage() {
                     <th className="px-4 py-3 w-12"><div className="h-4 w-4 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3"><div className="h-4 w-32 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-24"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></th>
+                    <th className="px-4 py-3 w-32"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -411,6 +419,7 @@ export default function SettingAccessPage() {
                       <td className="px-4 py-3"><div className="h-4 w-4 bg-gray-200 rounded animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-4 w-40 bg-gray-200 rounded animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-5 w-12 bg-gray-200 rounded-full animate-pulse" /></td>
+                      <td className="px-4 py-3"><div className="flex gap-2"><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -431,7 +440,7 @@ export default function SettingAccessPage() {
           icon={<KeyRound size={20} />}
           rightContent={
             <span className="text-sm text-gray-500">
-              {new Date().toLocaleDateString("id-ID")}
+              Total Akses: {accesses.length}
             </span>
           }
         />
@@ -477,7 +486,7 @@ export default function SettingAccessPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search akses..."
+                  placeholder="Cari akses..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 text-sm"
@@ -509,15 +518,24 @@ export default function SettingAccessPage() {
                   <th className="px-4 py-3 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentAccesses.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-4 py-12 text-center text-gray-400">
+                    <td colSpan={4} className="px-4 py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
                         <KeyRound size={48} className="text-gray-300" />
                         <p className="text-sm">Belum ada data akses</p>
+                        <button
+                          onClick={openAddModal}
+                          className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          + Tambah akses pertama
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -552,6 +570,30 @@ export default function SettingAccessPage() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetailModal(access);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="Detail"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(access);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            title="Edit"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -563,7 +605,7 @@ export default function SettingAccessPage() {
             <div className="p-4 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-500">
-                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredAccesses.length)} dari {filteredAccesses.length} entry
+                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredAccesses.length)} dari {filteredAccesses.length} akses
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -762,6 +804,17 @@ export default function SettingAccessPage() {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kode Akses
+                  </label>
+                  <input
+                    type="text"
+                    value={`ACC-${selectedAccess.id}`}
+                    disabled
+                    className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nama Akses <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -883,6 +936,82 @@ export default function SettingAccessPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalDetailOpen && selectedAccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalDetailOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Detail Akses</h2>
+              <button
+                onClick={() => setModalDetailOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Kode Akses</span>
+                <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                  ACC-{selectedAccess.id}
+                </code>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Nama Akses</span>
+                <span className="text-sm font-medium text-gray-800">{selectedAccess.name}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Status</span>
+                {Number(selectedAccess.active) === 1 ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    Aktif
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Nonaktif
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between items-start py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Menu / Sub Menu</span>
+                <div className="text-right">
+                  {menus
+                    .filter(menu => selectedMenuIds.includes(menu.id))
+                    .map(menu => (
+                      <div key={menu.id} className="text-xs text-gray-600 mb-1">
+                        <span className="font-medium">{menu.name}</span>
+                        {menu.submenu && menu.submenu.filter(sub => selectedSubmenuIds.includes(sub.id)).length > 0 && (
+                          <div className="text-gray-400 text-xs ml-2">
+                            {menu.submenu.filter(sub => selectedSubmenuIds.includes(sub.id)).map(sub => sub.name).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  {selectedMenuIds.length === 0 && selectedSubmenuIds.length === 0 && (
+                    <span className="text-xs text-gray-400">-</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="p-6 pt-0">
+              <button
+                onClick={() => {
+                  setModalDetailOpen(false);
+                  openEditModal(selectedAccess);
+                }}
+                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+              >
+                <Edit size={18} />
+                Edit Akses
+              </button>
+            </div>
           </div>
         </div>
       )}

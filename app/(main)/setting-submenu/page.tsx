@@ -1,7 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { Settings, Plus, Trash2, Save, X, AlertCircle, Menu, Search } from "lucide-react";
+import { Settings, Plus, Trash2, Save, X, AlertCircle, Menu, Search, Edit, Eye } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -33,6 +33,7 @@ export default function SettingSubmenuPage() {
 
   const [modalAddOpen, setModalAddOpen] = useState(false);
   const [modalEditOpen, setModalEditOpen] = useState(false);
+  const [modalDetailOpen, setModalDetailOpen] = useState(false);
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false);
 
   const [selectedSubmenu, setSelectedSubmenu] = useState<SubMenu | null>(null);
@@ -174,6 +175,11 @@ export default function SettingSubmenuPage() {
     setModalEditOpen(true);
   };
 
+  const openDetailModal = (submenu: SubMenu) => {
+    setSelectedSubmenu(submenu);
+    setModalDetailOpen(true);
+  };
+
   const openDeleteModal = () => {
     if (selectedSubmenus.length === 0) {
       toast.error("Pilih sub menu yang akan dihapus");
@@ -236,7 +242,6 @@ export default function SettingSubmenuPage() {
         toast.success("Sub menu berhasil ditambahkan");
         setModalAddOpen(false);
         fetchSubmenus();
-
         window.dispatchEvent(new Event("menuUpdated"));
       }
     } catch (error: any) {
@@ -277,7 +282,6 @@ export default function SettingSubmenuPage() {
         toast.success("Sub menu berhasil diupdate");
         setModalEditOpen(false);
         fetchSubmenus();
-
         window.dispatchEvent(new Event("menuUpdated"));
       }
     } catch (error: any) {
@@ -298,7 +302,6 @@ export default function SettingSubmenuPage() {
         setSelectedSubmenus([]);
         setModalDeleteOpen(false);
         fetchSubmenus();
-
         window.dispatchEvent(new Event("menuUpdated"));
       }
     } catch (error: any) {
@@ -338,10 +341,11 @@ export default function SettingSubmenuPage() {
                     <th className="px-4 py-3 w-12"><div className="h-4 w-4 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-16"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></th>
-                    <th className="px-4 py-3"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></th>
+                    <th className="px-4 py-3"><div className="h-4 w-32 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-20"><div className="h-4 w-12 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-24"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></th>
+                    <th className="px-4 py-3 w-32"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -354,6 +358,7 @@ export default function SettingSubmenuPage() {
                       <td className="px-4 py-3"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-5 w-12 bg-gray-200 rounded-full animate-pulse" /></td>
+                      <td className="px-4 py-3"><div className="flex gap-2"><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -374,7 +379,7 @@ export default function SettingSubmenuPage() {
           icon={<Menu size={20} />}
           rightContent={
             <span className="text-sm text-gray-500">
-              {new Date().toLocaleDateString("id-ID")}
+              Total Sub Menu: {submenus.length}
             </span>
           }
         />
@@ -420,7 +425,7 @@ export default function SettingSubmenuPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search sub menu..."
+                  placeholder="Cari sub menu..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 text-sm"
@@ -464,15 +469,24 @@ export default function SettingSubmenuPage() {
                   <th className="px-4 py-3 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentSubmenus.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                    <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
                         <Menu size={48} className="text-gray-300" />
                         <p className="text-sm">Belum ada data sub menu</p>
+                        <button
+                          onClick={openAddModal}
+                          className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          + Tambah sub menu pertama
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -526,6 +540,30 @@ export default function SettingSubmenuPage() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetailModal(submenu);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="Detail"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(submenu);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            title="Edit"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -537,7 +575,7 @@ export default function SettingSubmenuPage() {
             <div className="p-4 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-500">
-                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredSubmenus.length)} dari {filteredSubmenus.length} entry
+                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredSubmenus.length)} dari {filteredSubmenus.length} sub menu
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -729,6 +767,17 @@ export default function SettingSubmenuPage() {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kode Sub Menu
+                  </label>
+                  <input
+                    type="text"
+                    value={`SUB-${selectedSubmenu.id}`}
+                    disabled
+                    className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Menu Induk <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -832,6 +881,76 @@ export default function SettingSubmenuPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalDetailOpen && selectedSubmenu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalDetailOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Detail Sub Menu</h2>
+              <button
+                onClick={() => setModalDetailOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Kode Sub Menu</span>
+                <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                  SUB-{selectedSubmenu.id}
+                </code>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Menu Induk</span>
+                <span className="text-sm font-medium text-gray-800">{getMenuName(selectedSubmenu.menu_id)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Nama Sub Menu</span>
+                <span className="text-sm font-medium text-gray-800">{selectedSubmenu.name}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Route</span>
+                <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                  {selectedSubmenu.route || "-"}
+                </code>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Urutan</span>
+                <span className="text-sm text-gray-600">{selectedSubmenu.number}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Status</span>
+                {Number(selectedSubmenu.active) === 1 ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    Aktif
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Nonaktif
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="p-6 pt-0">
+              <button
+                onClick={() => {
+                  setModalDetailOpen(false);
+                  openEditModal(selectedSubmenu);
+                }}
+                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+              >
+                <Edit size={18} />
+                Edit Sub Menu
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { Users, Plus, Trash2, Save, X, AlertCircle, Search, UserCircle, Store, Lock, KeyRound, Upload } from "lucide-react";
+import { Users, Plus, Trash2, Save, X, AlertCircle, Search, UserCircle, Store, Lock, KeyRound, Upload, Edit, Eye } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -51,6 +51,7 @@ export default function SettingUserPage() {
 
   const [modalAddOpen, setModalAddOpen] = useState(false);
   const [modalEditOpen, setModalEditOpen] = useState(false);
+  const [modalDetailOpen, setModalDetailOpen] = useState(false);
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -266,6 +267,11 @@ export default function SettingUserPage() {
     }
     setAvatarFile(null);
     setModalEditOpen(true);
+  };
+
+  const openDetailModal = (user: User) => {
+    setSelectedUser(user);
+    setModalDetailOpen(true);
   };
 
   const openDeleteModal = () => {
@@ -564,6 +570,7 @@ export default function SettingUserPage() {
                     <th className="px-4 py-3"><div className="h-4 w-32 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-16"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-16"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse" /></th>
+                    <th className="px-4 py-3 w-32"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -576,6 +583,7 @@ export default function SettingUserPage() {
                       <td className="px-4 py-3"><div className="h-4 w-40 bg-gray-200 rounded animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-5 w-8 bg-gray-200 rounded-full animate-pulse" /></td>
                       <td className="px-4 py-3"><div className="h-5 w-8 bg-gray-200 rounded-full animate-pulse" /></td>
+                      <td className="px-4 py-3"><div className="flex gap-2"><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /><div className="h-8 w-8 bg-gray-200 rounded animate-pulse" /></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -596,7 +604,7 @@ export default function SettingUserPage() {
           icon={<Users size={20} />}
           rightContent={
             <span className="text-sm text-gray-500">
-              {new Date().toLocaleDateString("id-ID")}
+              Total User: {users.length}
             </span>
           }
         />
@@ -642,7 +650,7 @@ export default function SettingUserPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search user..."
+                  placeholder="Cari user..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 text-sm"
@@ -686,15 +694,24 @@ export default function SettingUserPage() {
                   <th className="px-4 py-3 w-16 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aktif
                   </th>
+                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                    <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
                       <div className="flex flex-col items-center gap-2">
                         <Users size={48} className="text-gray-300" />
                         <p className="text-sm">Belum ada data user</p>
+                        <button
+                          onClick={openAddModal}
+                          className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          + Tambah user pertama
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -703,7 +720,6 @@ export default function SettingUserPage() {
                     <tr
                       key={user.id}
                       className="hover:bg-gray-50 transition-all duration-150 cursor-pointer"
-                      onClick={() => openEditModal(user)}
                     >
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -766,6 +782,30 @@ export default function SettingUserPage() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetailModal(user);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="Detail"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(user);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            title="Edit"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -777,7 +817,7 @@ export default function SettingUserPage() {
             <div className="p-4 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-500">
-                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredUsers.length)} dari {filteredUsers.length} entry
+                  Menampilkan {indexOfFirstEntry + 1} sampai {Math.min(indexOfLastEntry, filteredUsers.length)} dari {filteredUsers.length} user
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1321,6 +1361,114 @@ export default function SettingUserPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalDetailOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalDetailOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Detail User</h2>
+              <button
+                onClick={() => setModalDetailOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex flex-col items-center pb-4 border-b border-gray-100">
+                <img
+                  src={getAvatarUrl(selectedUser.avatar)}
+                  alt={getFullName(selectedUser)}
+                  className="w-24 h-24 rounded-full object-cover mb-3"
+                />
+                <div className="text-center">
+                  <div className="font-semibold text-gray-800 text-lg">{getFullName(selectedUser)}</div>
+                  <div className="text-sm text-gray-500">@{selectedUser.username}</div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Level Akses</span>
+                <span className="text-sm font-medium text-gray-800">{selectedUser.access_name || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Toko</span>
+                <div className="text-right">
+                  {selectedUser.nama_toko ? (
+                    <>
+                      <div className="text-sm font-medium text-gray-800">{selectedUser.nama_toko}</div>
+                      <div className="text-xs text-gray-500">{selectedUser.alamat_toko}</div>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">-</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Tempat, Tanggal Lahir</span>
+                <span className="text-sm text-gray-600">
+                  {selectedUser.pob ? `${selectedUser.pob}, ` : ""}{selectedUser.dob || "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Jenis Kelamin</span>
+                <span className="text-sm text-gray-600">
+                  {selectedUser.gender === "L" ? "Laki-laki" : selectedUser.gender === "P" ? "Perempuan" : "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Alamat</span>
+                <span className="text-sm text-gray-600 text-right max-w-[60%]">
+                  {selectedUser.address || "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">No. HP</span>
+                <span className="text-sm text-gray-600">{selectedUser.phone || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Status Login</span>
+                {Number(selectedUser.is_login) === 1 ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    Sedang Login
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Offline
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Status</span>
+                {Number(selectedUser.active) === 1 ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    Aktif
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Nonaktif
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="p-6 pt-0">
+              <button
+                onClick={() => {
+                  setModalDetailOpen(false);
+                  openEditModal(selectedUser);
+                }}
+                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+              >
+                <Edit size={18} />
+                Edit User
+              </button>
+            </div>
           </div>
         </div>
       )}

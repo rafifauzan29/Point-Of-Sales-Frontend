@@ -134,7 +134,7 @@ export default function Sidebar() {
       </div>
 
       <div className="flex-1 min-h-0">
-        <div className="h-full overflow-y-auto scrollbar-thin">
+        <div className="h-full overflow-y-auto scrollbar-thin sidebar-scroll">
           <div className="px-3 py-4">
             <div className="space-y-1">
               {menu.map((item, i) => {
@@ -198,7 +198,7 @@ export default function Sidebar() {
                         </button>
 
                         <div
-                          className={`ml-7 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                          className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                             }`}
                         >
                           {item.submenu?.map((sub, j) => (
