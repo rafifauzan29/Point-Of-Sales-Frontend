@@ -41,7 +41,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-emerald-100 font-medium flex items-center gap-2">
@@ -53,13 +53,13 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <TrendingUp size={28} className="text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 font-medium flex items-center gap-2">
@@ -71,7 +71,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <ShoppingBag size={28} className="text-white" />
               </div>
             </div>
