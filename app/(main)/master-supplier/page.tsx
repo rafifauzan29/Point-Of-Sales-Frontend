@@ -40,6 +40,11 @@ export default function MasterSupplierPage() {
     email: "",
   });
 
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Supplier;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event("page-loaded"));
@@ -66,11 +71,68 @@ export default function MasterSupplierPage() {
     fetchSuppliers();
   }, [fetchSuppliers]);
 
-  const filteredSuppliers = suppliers.filter((supplier) =>
-    supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (supplier.phone && supplier.phone.includes(searchTerm)) ||
-    (supplier.email && supplier.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  const handleSort = (key: keyof Supplier) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedSuppliers = (items: Supplier[]) => {
+    if (!sortConfig) return items;
+
+    return [...items].sort((a, b) => {
+      let aVal: any = a[sortConfig.key];
+      let bVal: any = b[sortConfig.key];
+
+      if (aVal === undefined) aVal = '';
+      if (bVal === undefined) bVal = '';
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+
+      if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const SortIcon = ({ column, label }: { column: keyof Supplier; label: string }) => {
+    const isActive = sortConfig?.key === column;
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSort(column);
+        }}
+        className="inline-flex items-center justify-between w-full hover:text-blue-600 transition-colors group"
+      >
+        <span>{label}</span>
+        <div className="flex flex-col items-center ml-2">
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▲
+          </span>
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▼
+          </span>
+        </div>
+      </button>
+    );
+  };
+
+  const filteredSuppliers = getSortedSuppliers(
+    suppliers.filter((supplier) =>
+      supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      supplier.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (supplier.phone && supplier.phone.includes(searchTerm)) ||
+      (supplier.email && supplier.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
   );
 
   const indexOfLastEntry = currentPage * entriesPerPage;
@@ -351,9 +413,9 @@ export default function MasterSupplierPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto mx-3">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 w-12">
                     <input
@@ -368,22 +430,22 @@ export default function MasterSupplierPage() {
                       className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 w-24 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kode
+                  <th className="px-4 py-3 w-24 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                    <SortIcon column="code" label="Kode" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama Supplier
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="name" label="Nama Supplier" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Alamat
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="address" label="Alamat" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Telepon
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="phone" label="Telepon" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="email" label="Email" />
                   </th>
-                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-32 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -405,7 +467,7 @@ export default function MasterSupplierPage() {
                     </td>
                   </tr>
                 ) : (
-                  currentSuppliers.map((supplier, index) => (
+                  currentSuppliers.map((supplier) => (
                     <tr
                       key={supplier.id}
                       className="hover:bg-gray-50 transition-all duration-150 cursor-pointer"
@@ -420,7 +482,7 @@ export default function MasterSupplierPage() {
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">
+                        <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600 whitespace-nowrap">
                           {supplier.code}
                         </code>
                       </td>
@@ -438,18 +500,14 @@ export default function MasterSupplierPage() {
                       </td>
                       <td className="px-4 py-3">
                         {supplier.phone ? (
-                          <a href={`tel:${supplier.phone}`} className="text-sm text-blue-600 hover:underline">
-                            {supplier.phone}
-                          </a>
+                          <span className="text-sm text-gray-600 whitespace-nowrap">{supplier.phone}</span>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {supplier.email ? (
-                          <a href={`mailto:${supplier.email}`} className="text-sm text-blue-600 hover:underline">
-                            {supplier.email}
-                          </a>
+                          <span className="text-sm text-gray-600 truncate max-w-[200px]">{supplier.email}</span>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
@@ -461,7 +519,7 @@ export default function MasterSupplierPage() {
                               e.stopPropagation();
                               openDetailModal(supplier);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Detail"
                           >
                             <Eye size={16} />
@@ -471,7 +529,7 @@ export default function MasterSupplierPage() {
                               e.stopPropagation();
                               openEditModal(supplier);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Edit"
                           >
                             <Edit size={16} />

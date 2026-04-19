@@ -61,6 +61,11 @@ export default function SettingUserPage() {
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof User | 'fullname';
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -76,32 +81,6 @@ export default function SettingUserPage() {
     phone: "",
     active: 1,
   });
-
-  const filteredUsers = users.filter((user) =>
-    (user.firstname && user.firstname.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.lastname && user.lastname.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.access_name && user.access_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.nama_toko && user.nama_toko.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  const indexOfLastEntry = currentPage * entriesPerPage;
-  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstEntry, indexOfLastEntry);
-  const totalPages = Math.ceil(filteredUsers.length / entriesPerPage);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, entriesPerPage]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleEntriesPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setEntriesPerPage(Number(e.target.value));
-    setCurrentPage(1);
-  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -151,6 +130,103 @@ export default function SettingUserPage() {
     fetchAccesses();
     fetchTokos();
   }, [fetchUsers, fetchAccesses, fetchTokos]);
+
+  const handleSort = (key: keyof User | 'fullname') => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getFullNameForSort = (user: User) => {
+    const first = user.firstname || "";
+    const last = user.lastname || "";
+    if (first && last) return `${first} ${last}`;
+    if (first) return first;
+    if (last) return last;
+    return user.username;
+  };
+
+  const getSortedUsers = (items: User[]) => {
+    if (!sortConfig) return items;
+
+    return [...items].sort((a, b) => {
+      let aVal: any = a[sortConfig.key as keyof User];
+      let bVal: any = b[sortConfig.key as keyof User];
+
+      if (sortConfig.key === 'fullname') {
+        aVal = getFullNameForSort(a);
+        bVal = getFullNameForSort(b);
+      }
+
+      if (aVal === undefined) aVal = '';
+      if (bVal === undefined) bVal = '';
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+
+      if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const SortIcon = ({ column, label }: { column: keyof User | 'fullname'; label: string }) => {
+    const isActive = sortConfig?.key === column;
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSort(column);
+        }}
+        className="inline-flex items-center justify-between w-full hover:text-blue-600 transition-colors group"
+      >
+        <span>{label}</span>
+        <div className="flex flex-col items-center ml-2">
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▲
+          </span>
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▼
+          </span>
+        </div>
+      </button>
+    );
+  };
+
+  const filteredUsers = getSortedUsers(
+    users.filter((user) =>
+      (user.firstname && user.firstname.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.lastname && user.lastname.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.access_name && user.access_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.nama_toko && user.nama_toko.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+  );
+
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(filteredUsers.length / entriesPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, entriesPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleEntriesPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEntriesPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -659,9 +735,9 @@ export default function SettingUserPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto mx-3">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 w-12">
                     <input
@@ -676,25 +752,25 @@ export default function SettingUserPage() {
                       className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 w-16 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-16 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     Foto
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="fullname" label="Nama" />
                   </th>
-                  <th className="px-4 py-3 w-28 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Level
+                  <th className="px-4 py-3 w-28 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="access_name" label="Level" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Toko
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="nama_toko" label="Toko" />
                   </th>
-                  <th className="px-4 py-3 w-16 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Login
+                  <th className="px-4 py-3 w-16 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="is_login" label="Login" />
                   </th>
-                  <th className="px-4 py-3 w-16 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aktif
+                  <th className="px-4 py-3 w-16 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="active" label="Aktif" />
                   </th>
-                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-32 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -720,6 +796,7 @@ export default function SettingUserPage() {
                     <tr
                       key={user.id}
                       className="hover:bg-gray-50 transition-all duration-150 cursor-pointer"
+                      onClick={() => openEditModal(user)}
                     >
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -741,7 +818,7 @@ export default function SettingUserPage() {
                         <div className="text-xs text-gray-400">{user.username}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 whitespace-nowrap">
                           <KeyRound size={12} />
                           {user.access_name || "-"}
                         </span>
@@ -749,7 +826,7 @@ export default function SettingUserPage() {
                       <td className="px-4 py-3">
                         {user.nama_toko ? (
                           <div className="text-sm text-gray-600">
-                            <div className="font-medium">{user.nama_toko}</div>
+                            <div className="font-medium truncate max-w-xs">{user.nama_toko}</div>
                             <div className="text-xs text-gray-400 truncate max-w-xs">{user.alamat_toko}</div>
                           </div>
                         ) : (
@@ -789,7 +866,7 @@ export default function SettingUserPage() {
                               e.stopPropagation();
                               openDetailModal(user);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Detail"
                           >
                             <Eye size={16} />
@@ -799,7 +876,7 @@ export default function SettingUserPage() {
                               e.stopPropagation();
                               openEditModal(user);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Edit"
                           >
                             <Edit size={16} />

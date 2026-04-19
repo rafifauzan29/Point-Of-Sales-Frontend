@@ -1,7 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { Settings, Plus, Trash2, Save, X, AlertCircle, Menu, Search, Edit, Eye } from "lucide-react";
+import { Menu, Plus, Trash2, Save, X, AlertCircle, Search, Edit, Eye } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -16,14 +16,14 @@ interface SubMenu {
   active: number | string;
 }
 
-interface Menu {
+interface MenuItem {
   id: number;
   name: string;
 }
 
 export default function SettingSubmenuPage() {
   const [submenus, setSubmenus] = useState<SubMenu[]>([]);
-  const [menus, setMenus] = useState<Menu[]>([]);
+  const [menus, setMenus] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmenus, setSelectedSubmenus] = useState<number[]>([]);
 
@@ -38,6 +38,12 @@ export default function SettingSubmenuPage() {
 
   const [selectedSubmenu, setSelectedSubmenu] = useState<SubMenu | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof SubMenu | 'menu_name';
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     menu_id: 0,
@@ -83,28 +89,69 @@ export default function SettingSubmenuPage() {
     fetchMenus();
   }, [fetchSubmenus, fetchMenus]);
 
-  const filteredSubmenus = submenus.filter((submenu) =>
-    submenu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (submenu.route && submenu.route.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    getMenuName(submenu.menu_id).toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const indexOfLastEntry = currentPage * entriesPerPage;
-  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-  const currentSubmenus = filteredSubmenus.slice(indexOfFirstEntry, indexOfLastEntry);
-  const totalPages = Math.ceil(filteredSubmenus.length / entriesPerPage);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, entriesPerPage]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const getMenuName = (menuId: number) => {
+    const menu = menus.find(m => m.id === menuId);
+    return menu ? menu.name : "-";
   };
 
-  const handleEntriesPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setEntriesPerPage(Number(e.target.value));
-    setCurrentPage(1);
+  const handleSort = (key: keyof SubMenu | 'menu_name') => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedSubmenus = (items: SubMenu[]) => {
+    if (!sortConfig) return items;
+
+    return [...items].sort((a, b) => {
+      let aVal: any = a[sortConfig.key as keyof SubMenu];
+      let bVal: any = b[sortConfig.key as keyof SubMenu];
+
+      if (sortConfig.key === 'menu_name') {
+        aVal = getMenuName(a.menu_id);
+        bVal = getMenuName(b.menu_id);
+      }
+
+      if (aVal === undefined) aVal = '';
+      if (bVal === undefined) bVal = '';
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+
+      if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const SortIcon = ({ column, label }: { column: keyof SubMenu | 'menu_name'; label: string }) => {
+    const isActive = sortConfig?.key === column;
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSort(column);
+        }}
+        className="inline-flex items-center justify-between w-full hover:text-blue-600 transition-colors group"
+      >
+        <span>{label}</span>
+        <div className="flex flex-col items-center ml-2">
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▲
+          </span>
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▼
+          </span>
+        </div>
+      </button>
+    );
   };
 
   const getSubmenuCountByMenuId = (menuId: number) => {
@@ -133,6 +180,32 @@ export default function SettingSubmenuPage() {
       options.push({ value: i, label: i.toString() });
     }
     return options;
+  };
+
+  const filteredSubmenus = getSortedSubmenus(
+    submenus.filter((submenu) =>
+      submenu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (submenu.route && submenu.route.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      getMenuName(submenu.menu_id).toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentSubmenus = filteredSubmenus.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(filteredSubmenus.length / entriesPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, entriesPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleEntriesPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEntriesPerPage(Number(e.target.value));
+    setCurrentPage(1);
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -311,11 +384,6 @@ export default function SettingSubmenuPage() {
     }
   };
 
-  const getMenuName = (menuId: number) => {
-    const menu = menus.find(m => m.id === menuId);
-    return menu ? menu.name : "-";
-  };
-
   const allSelected = currentSubmenus.length > 0 && selectedSubmenus.length === currentSubmenus.length;
   const someSelected = selectedSubmenus.length > 0 && selectedSubmenus.length < currentSubmenus.length;
 
@@ -338,7 +406,6 @@ export default function SettingSubmenuPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 w-12"><div className="h-4 w-4 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3 w-16"><div className="h-4 w-8 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></th>
                     <th className="px-4 py-3"><div className="h-4 w-32 bg-gray-200 rounded animate-pulse" /></th>
@@ -434,9 +501,9 @@ export default function SettingSubmenuPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto mx-3">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 w-12">
                     <input
@@ -451,25 +518,22 @@ export default function SettingSubmenuPage() {
                       className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 w-16 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    No
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="menu_name" label="Menu Induk" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Menu Induk
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="name" label="Sub Menu" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sub Menu
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="route" label="Route" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Route
+                  <th className="px-4 py-3 w-20 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="number" label="Urutan" />
                   </th>
-                  <th className="px-4 py-3 w-20 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Urutan
+                  <th className="px-4 py-3 w-24 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="active" label="Status" />
                   </th>
-                  <th className="px-4 py-3 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-32 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -505,12 +569,8 @@ export default function SettingSubmenuPage() {
                           className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                         />
                       </td>
-                      <td className="px-4 py-3 text-gray-600 text-sm">
-                        {indexOfFirstEntry + index + 1}
-                      </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
                           {getMenuName(submenu.menu_id)}
                         </span>
                       </td>
@@ -519,14 +579,14 @@ export default function SettingSubmenuPage() {
                       </td>
                       <td className="px-4 py-3">
                         {submenu.route ? (
-                          <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                          <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 whitespace-nowrap">
                             {submenu.route}
                           </code>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{submenu.number}</td>
+                      <td className="px-4 py-3 text-gray-600 text-center">{submenu.number}</td>
                       <td className="px-4 py-3 text-center">
                         {Number(submenu.active) === 1 ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -547,7 +607,7 @@ export default function SettingSubmenuPage() {
                               e.stopPropagation();
                               openDetailModal(submenu);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Detail"
                           >
                             <Eye size={16} />
@@ -557,7 +617,7 @@ export default function SettingSubmenuPage() {
                               e.stopPropagation();
                               openEditModal(submenu);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Edit"
                           >
                             <Edit size={16} />

@@ -49,6 +49,59 @@ export default function SettingMenuPage() {
     active: 1,
   });
 
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Menu;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
+  const handleSort = (key: keyof Menu) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedMenus = (menusToSort: Menu[]) => {
+    if (!sortConfig) return menusToSort;
+
+    return [...menusToSort].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      if (aVal === undefined) aVal = '';
+      if (bVal === undefined) bVal = '';
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const SortIcon = ({ column, label }: { column: keyof Menu; label: string }) => {
+    const isActive = sortConfig?.key === column;
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSort(column);
+        }}
+        className="inline-flex items-center justify-between w-full hover:text-blue-600 transition-colors group"
+      >
+        <span>{label}</span>
+        <div className="flex flex-col items-center ml-2">
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▲
+          </span>
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▼
+          </span>
+        </div>
+      </button>
+    );
+  };
+
   const getIconClass = (icon?: string) => {
     const mappedIcon = iconMap[icon || ""] || icon || "mdi-menu";
     return `mdi ${mappedIcon}`;
@@ -85,9 +138,11 @@ export default function SettingMenuPage() {
     return options;
   };
 
-  const filteredMenus = menus.filter((menu) =>
-    menu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (menu.route && menu.route.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredMenus = getSortedMenus(
+    menus.filter((menu) =>
+      menu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (menu.route && menu.route.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
   );
 
   const indexOfLastEntry = currentPage * entriesPerPage;
@@ -405,9 +460,9 @@ export default function SettingMenuPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto mx-3">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 w-12">
                     <input
@@ -422,22 +477,22 @@ export default function SettingMenuPage() {
                       className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 w-16 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-16 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     Icon
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Menu
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="name" label="Menu" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Route
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="route" label="Route" />
                   </th>
-                  <th className="px-4 py-3 w-20 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Urutan
+                  <th className="px-4 py-3 w-20 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="number" label="Urutan" />
                   </th>
-                  <th className="px-4 py-3 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                  <th className="px-4 py-3 w-24 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="active" label="Status" />
                   </th>
-                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-32 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -473,7 +528,7 @@ export default function SettingMenuPage() {
                           className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-center">
                         <i className={`${getIconClass(menu.icon)} text-xl text-gray-600`} />
                       </td>
                       <td className="px-4 py-3">
@@ -488,7 +543,7 @@ export default function SettingMenuPage() {
                           <span className="text-xs text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{menu.number}</td>
+                      <td className="px-4 py-3 text-gray-600 text-center">{menu.number}</td>
                       <td className="px-4 py-3 text-center">
                         {Number(menu.active) === 1 ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -509,7 +564,7 @@ export default function SettingMenuPage() {
                               e.stopPropagation();
                               openDetailModal(menu);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Detail"
                           >
                             <Eye size={16} />
@@ -519,13 +574,13 @@ export default function SettingMenuPage() {
                               e.stopPropagation();
                               openEditModal(menu);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Edit"
                           >
                             <Edit size={16} />
                           </button>
                         </div>
-                       </td>
+                      </td>
                     </tr>
                   ))
                 )}

@@ -42,30 +42,10 @@ export default function SettingTokoPage() {
     is_active: 1,
   });
 
-  const filteredTokos = tokos.filter((toko) =>
-    toko.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (toko.code && toko.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (toko.address && toko.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (toko.phone && toko.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  const indexOfLastEntry = currentPage * entriesPerPage;
-  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-  const currentTokos = filteredTokos.slice(indexOfFirstEntry, indexOfLastEntry);
-  const totalPages = Math.ceil(filteredTokos.length / entriesPerPage);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, entriesPerPage]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleEntriesPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setEntriesPerPage(Number(e.target.value));
-    setCurrentPage(1);
-  };
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Toko;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -91,6 +71,88 @@ export default function SettingTokoPage() {
   useEffect(() => {
     fetchTokos();
   }, [fetchTokos]);
+
+  const handleSort = (key: keyof Toko) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedTokos = (items: Toko[]) => {
+    if (!sortConfig) return items;
+
+    return [...items].sort((a, b) => {
+      let aVal: any = a[sortConfig.key];
+      let bVal: any = b[sortConfig.key];
+
+      if (aVal === undefined) aVal = '';
+      if (bVal === undefined) bVal = '';
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+
+      if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const SortIcon = ({ column, label }: { column: keyof Toko; label: string }) => {
+    const isActive = sortConfig?.key === column;
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSort(column);
+        }}
+        className="inline-flex items-center justify-between w-full hover:text-blue-600 transition-colors group"
+      >
+        <span>{label}</span>
+        <div className="flex flex-col items-center ml-2">
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▲
+          </span>
+          <span className={`text-[10px] leading-none ${isActive && sortConfig?.direction === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}>
+            ▼
+          </span>
+        </div>
+      </button>
+    );
+  };
+
+  const filteredTokos = getSortedTokos(
+    tokos.filter((toko) =>
+      toko.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (toko.code && toko.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (toko.address && toko.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (toko.phone && toko.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+  );
+
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentTokos = filteredTokos.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(filteredTokos.length / entriesPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, entriesPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleEntriesPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEntriesPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -367,9 +429,9 @@ export default function SettingTokoPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto mx-3">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 w-12">
                     <input
@@ -384,22 +446,22 @@ export default function SettingTokoPage() {
                       className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 w-24 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kode Toko
+                  <th className="px-4 py-3 w-24 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                    <SortIcon column="code" label="Kode Toko" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama Toko
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="name" label="Nama Toko" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Alamat
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="address" label="Alamat" />
                   </th>
-                  <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    No. HP
+                  <th className="px-4 py-3 w-32 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="phone" label="No. HP" />
                   </th>
-                  <th className="px-4 py-3 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                  <th className="px-4 py-3 w-24 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <SortIcon column="is_active" label="Status" />
                   </th>
-                  <th className="px-4 py-3 w-32 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-32 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -436,7 +498,7 @@ export default function SettingTokoPage() {
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">
+                        <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600 whitespace-nowrap">
                           {toko.code}
                         </code>
                       </td>
@@ -448,7 +510,7 @@ export default function SettingTokoPage() {
                       </td>
                       <td className="px-4 py-3">
                         {toko.phone ? (
-                          <span className="text-sm text-gray-600">{toko.phone}</span>
+                          <span className="text-sm text-gray-600 whitespace-nowrap">{toko.phone}</span>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
@@ -473,7 +535,7 @@ export default function SettingTokoPage() {
                               e.stopPropagation();
                               openDetailModal(toko);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Detail"
                           >
                             <Eye size={16} />
@@ -483,7 +545,7 @@ export default function SettingTokoPage() {
                               e.stopPropagation();
                               openEditModal(toko);
                             }}
-                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                             title="Edit"
                           >
                             <Edit size={16} />
